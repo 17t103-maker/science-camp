@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>小六才艺营 - 科学站实操现场大榜</title>
+    <style>
+        body {
+            background-color: #0a1118; color: #fff;
+            font-family: 'Microsoft YaHei', sans-serif; padding: 30px; text-align: center;
+        }
+        h1 { color: #00ffcc; font-size: 36px; text-shadow: 0 0 15px rgba(0,255,204,0.4); margin-bottom: 20px; }
+        .board-container {
+            max-width: 900px; margin: 0 auto; background: #132230;
+            border: 2px solid #00ffcc; border-radius: 12px; padding: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 15px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th { color: #ffd700; font-size: 18px; border-bottom: 2px solid #ffd700; }
+        tr:nth-child(1) td { color: #ffd700; font-weight: bold; font-size: 22px; }
+        tr:nth-child(2) td { color: #c0c0c0; font-weight: bold; font-size: 19px; }
+        tr:nth-child(3) td { color: #cd7f32; font-weight: bold; font-size: 18px; }
+        .badge {
+            background: rgba(0,255,204,0.1); border: 1px solid #00ffcc;
+            padding: 3px 8px; border-radius: 4px; font-size: 14px; color: #00ffcc;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏆 小六才艺营 - 科学站实时风云榜</h1>
+    <div class="board-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>名次</th>
+                    <th>组别</th>
+                    <th>小队名称</th>
+                    <th>得分 (满分10)</th>
+                    <th>完成用时</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                <!-- 动态渲染 -->
+            </tbody>
+        </table>
+    </div>
+
+<script>
+    function updateLeaderboard() {
+        // 读取数据 (此处示例从 localStorage 读取，实际上可改为从数据库/API Fetch)
+        var data = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
+
+        // 排序规则：得分从高到低；若得分相同，用时（秒数）从小到大
+        data.sort(function(a, b) {
+            if (b.score !== a.score) {
+                return b.score - a.score;
+            } else {
+                return a.total_seconds - b.total_seconds;
+            }
+        });
+
+        var tbody = document.getElementById('leaderboard-body');
+        tbody.innerHTML = '';
+
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:#88a0b5;">等待特工小队完成任务提交数据...</td></tr>';
+            return;
+        }
+
+        data.forEach(function(item, index) {
+            var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
+            tbody.innerHTML += `
+                <tr>
+                    <td>${rankIcon}</td>
+                    <td><span class="badge">${item.group}</span></td>
+                    <td>${item.team}</td>
+                    <td style="color:#ffd700; font-weight:bold;">${item.score} 分</td>
+                    <td style="font-family:monospace;">${item.time_used}</td>
+                </tr>
+            `;
+        });
+    }
+
+    // 初始更新并每 3 秒自动刷新现场排行榜
+    updateLeaderboard();
+    setInterval(updateLeaderboard, 3000);
+</script>
+</body>
+</html>

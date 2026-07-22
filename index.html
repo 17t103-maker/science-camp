@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小六才艺营 - 花青素特工训练营系统</title>
+    <style>
+        :root {
+            --bg-dark: #0a1118;
+            --panel-bg: #132230;
+            --primary: #00ffcc;
+            --text: #ffffff;
+            --drop-color: #ff4a4a;
+            --accent-gold: #ffd700;
+        }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text);
+            font-family: 'Microsoft YaHei', sans-serif;
+            margin: 0; padding: 15px; text-align: center;
+            user-select: none;
+        }
+        .container {
+            max-width: 950px; margin: 0 auto 20px auto;
+            background: var(--panel-bg); border: 1px solid rgba(0, 255, 204, 0.2);
+            padding: 20px; border-radius: 12px; box-shadow: 0 0 25px rgba(0,0,0,0.5);
+        }
+        h1 { color: var(--primary); font-size: 24px; margin-bottom: 5px; }
+        .section-title {
+            font-size: 18px; color: var(--primary); text-align: left;
+            border-bottom: 1px solid rgba(0,255,204,0.3); padding-bottom: 8px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .mission-brief {
+            background: rgba(0,0,0,0.3); padding: 12px; border-radius: 6px;
+            font-size: 13px; color: #a0b0c0; text-align: left; margin-bottom: 20px; border-left: 4px solid var(--primary);
+        }
+        .team-bar {
+            background: rgba(0,0,0,0.4); padding: 10px 15px; border-radius: 6px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; border: 1px solid rgba(0,255,204,0.2);
+            font-size: 14px; color: var(--accent-gold);
+        }
+        .workspace {
+            display: flex; justify-content: space-around; align-items: center;
+            background: rgba(0,0,0,0.2); padding: 20px; border-radius: 8px; gap: 20px; flex-wrap: wrap;
+        }
+        .control-panel {
+            flex: 1; min-width: 280px; display: flex; flex-direction: column; gap: 12px; text-align: left;
+        }
+        .btn-action {
+            background: #0d1b2a; color: #fff; border: 1px solid var(--primary);
+            padding: 12px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
+            transition: all 0.2s; text-align: center; width: 100%; box-sizing: border-box;
+        }
+        .btn-action:hover { background: rgba(0, 255, 204, 0.1); box-shadow: 0 0 10px rgba(0, 255, 204, 0.2); }
+        .btn-capture { background: var(--primary); color: #0a1118; border: none; }
+        .btn-capture:hover { background: #00cc99; box-shadow: 0 0 15px var(--primary); }
+        .btn-verify-single {
+            background: rgba(0,255,204,0.2); border: 1px solid var(--primary); color: #fff;
+            padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .btn-verify-single:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        .ph-gauge {
+            font-size: 36px; font-weight: bold; color: var(--primary);
+            font-family: monospace; text-align: center; margin: 5px 0;
+            text-shadow: 0 0 10px rgba(0,255,204,0.3);
+        }
+        .loading-container {
+            width: 100%; background: rgba(0,0,0,0.5); border: 1px solid rgba(0,255,204,0.3);
+            height: 14px; border-radius: 7px; overflow: hidden; margin-top: 5px; position: relative;
+        }
+        .loading-bar {
+            width: 0%; height: 100%; background: linear-gradient(90deg, #00b3ff, var(--primary));
+            transition: width 0.2s ease;
+        }
+        .loading-text {
+            position: absolute; width: 100%; text-align: center; font-size: 10px;
+            line-height: 14px; color: #ffffff; font-weight: bold; top: 0; left: 0;
+        }
+        .visual-panel {
+            flex: 1; min-width: 250px; display: flex; flex-direction: column; align-items: center;
+            position: relative; min-height: 280px;
+        }
+        .dropper-point {
+            width: 40px; height: 12px; background: #666; border-radius: 4px;
+            position: absolute; top: 10px; z-index: 5;
+        }
+        .liquid-drop {
+            width: 14px; height: 14px; background: var(--drop-color);
+            border-radius: 0 50% 50% 50%; transform: rotate(45deg);
+            position: absolute; top: 22px; opacity: 0; z-index: 4; left: 50%; margin-left: -7px;
+        }
+        .drop-falling { animation: fallAnimation 0.4s ease-in forwards; }
+        @keyframes fallAnimation {
+            0% { transform: scale(0.3) rotate(45deg); opacity: 0; top: 22px; }
+            10% { opacity: 1; transform: scale(1) rotate(45deg); }
+            90% { opacity: 1; }
+            100% { top: 105px; transform: scale(0.8) rotate(45deg); opacity: 0; }
+        }
+        .beaker {
+            width: 80px; height: 160px; border: 4px solid #ffffff; border-top: none;
+            border-radius: 0 0 30px 30px; position: absolute; top: 100px;
+            background: rgba(255,255,255,0.03); overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 3;
+        }
+        .liquid {
+            width: 100%; height: 70%; position: absolute; bottom: 0;
+            background-color: #9933ff; transition: background-color 0.4s ease;
+        }
+        .liquid.agitated { animation: shakeLiquid 0.3s ease-in-out; }
+        @keyframes shakeLiquid { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.04); } }
+        .status-tip { font-size: 12px; color: #88a0b5; position: absolute; top: 270px; width: 100%; }
+
+        .spectrum-box { margin-top: 20px; background: rgba(0,0,0,0.4); padding: 12px; border-radius: 8px; }
+        .spectrum-bar { display: flex; justify-content: space-between; gap: 4px; margin-top: 10px; }
+        .color-slot {
+            flex: 1; height: 65px; background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+            font-size: 10px; display: flex; flex-direction: column; justify-content: space-between; padding: 4px 2px;
+        }
+        .color-block { height: 28px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); }
+
+        .stage2-container { margin-top: 20px; border-color: rgba(255, 215, 0, 0.3); display: none; }
+        .stage2-container.unlocked { display: block; }
+        
+        .sample-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px; margin-top: 15px;
+        }
+        .sample-card {
+            background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; padding: 12px 8px; display: flex; flex-direction: column;
+            align-items: center; gap: 8px; position: relative;
+        }
+        .sample-title { font-weight: bold; font-size: 15px; color: var(--accent-gold); }
+        .sample-input-group { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+        .sample-input {
+            width: 55px; padding: 4px; background: rgba(255,255,255,0.1);
+            border: 1px solid var(--primary); color: #fff; border-radius: 4px;
+            text-align: center; font-size: 15px; font-weight: bold;
+        }
+        .sample-status { font-size: 11px; min-height: 16px; }
+
+        .overlay {
+            display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 17, 24, 0.96); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-box { border: 2px solid var(--primary); padding: 30px; background: var(--panel-bg); border-radius: 12px; max-width: 450px; width: 90%; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 13px; color: #a0b0c0; margin-bottom: 5px; }
+        .form-control {
+            width: 100%; padding: 10px; background: rgba(0,0,0,0.3); border: 1px solid var(--primary);
+            color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 注册弹窗 (初始显示) -->
+<div class="overlay" id="register-modal">
+    <div class="modal-box">
+        <h2>🏷️ 特工小组身份登记</h2>
+        <p style="font-size:13px; color:#a0b0c0; margin-bottom:20px;">请填写您的组别与组名以开启答题与计时</p>
+        <div class="form-group">
+            <label>请选择组别：</label>
+            <select class="form-control" id="group-select">
+                <option value="第1组">第 1 组</option>
+                <option value="第2组">第 2 组</option>
+                <option value="第3组">第 3 组</option>
+                <option value="第4组">第 4 组</option>
+                <option value="第5组">第 5 组</option>
+                <option value="第6组">第 6 组</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>请输入小队名称 (最多10字)：</label>
+            <input type="text" class="form-control" id="team-name-input" maxlength="10" placeholder="例：破译先锋队">
+        </div>
+        <button class="btn-action btn-capture" onclick="startMission()">🚀 开始特工任务</button>
+    </div>
+</div>
+
+<!-- 顶部状态栏 -->
+<div class="container" style="padding:10px 20px; display:none;" id="status-bar-container">
+    <div class="team-bar" style="margin:0;">
+        <div>当前小队：<b id="display-team-info" style="color:#fff;">-</b></div>
+        <div>⏱️ 已经用时：<b id="timer-display" style="color:var(--primary); font-family:monospace; font-size:16px;">00:00</b></div>
+        <div>当前积分：<b id="score-display" style="color:var(--accent-gold); font-size:16px;">0</b> / 10 分</div>
+    </div>
+</div>
+
+<!-- 阶段一 界面 -->
+<div class="container" id="stage1-app">
+    <header>
+        <h1>🧪 阶段一：pH 2-11 花青素变色光谱生成器</h1>
+        <div class="mission-brief">
+            <b>🕵️ 特工指令：</b>连续加酸/加碱（满3滴变色）收集齐 pH 2-11 的 10 种标准色谱，即可解锁阶段二线下实战！
+        </div>
+    </header>
+
+    <div class="workspace">
+        <div class="control-panel">
+            <button class="btn-action" id="btn-acid" onclick="triggerDrip(-1)">💧 持续滴入酸性物质 (pH ↓)</button>
+            <div style="font-size: 11px; color: #88a0b5;">滴加进度 (每满3滴跳变)：</div>
+            <div class="loading-container">
+                <div class="loading-bar" id="drip-loading"></div>
+                <div class="loading-text" id="drip-text">等待滴入... (0/3)</div>
+            </div>
+            <div style="text-align: center; color: #88a0b5; font-size: 13px;">当前酸碱度：</div>
+            <div class="ph-gauge">pH <span id="ph-val">7</span></div>
+            <button class="btn-action" id="btn-alkali" onclick="triggerDrip(1)">🧪 持续滴入碱性物质 (pH ↑)</button>
+            <button class="btn-action btn-capture" onclick="captureColor()">📸 捕获当前 pH 颜色数据</button>
+        </div>
+
+        <div class="visual-panel">
+            <div class="dropper-point"></div>
+            <div class="liquid-drop" id="moving-drop"></div>
+            <div class="beaker"><div class="liquid" id="beaker-liquid"></div></div>
+            <div class="status-tip" id="status-tip">当前溶液呈现中性常态紫色</div>
+        </div>
+    </div>
+
+    <div class="spectrum-box">
+        <span style="font-size: 13px; color: var(--primary); font-weight: bold; display: block; text-align: left;">📊 侦探局标准光谱线：</span>
+        <div class="spectrum-bar" id="spectrum-bar"></div>
+    </div>
+</div>
+
+<!-- 阶段二 界面 -->
+<div class="container stage2-container" id="stage2-app">
+    <div class="section-title">
+        <span>🔬 阶段二：未知溶液 A-E 线下实战验证</span>
+        <span style="font-size: 12px; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 2px 8px; border-radius: 4px;">已解锁</span>
+    </div>
+
+    <div class="mission-brief" style="border-left-color: var(--accent-gold);">
+        <b>🔍 实战计分规则：</b>对照色谱线观察实物试剂。每个溶液<b>首次答对得2分</b>，<b>错1次后答对得1分</b>，<b>错2次后该题得0分锁定</b>！(pH输入范围限制为 2 ~ 11 整数)
+    </div>
+
+    <div class="sample-grid" id="sample-grid-container"></div>
+</div>
+
+<!-- 通关提示弹窗 -->
+<div class="overlay" id="win-overlay" style="display:none;">
+    <div class="modal-box">
+        <h2>🌈 pH 色谱标定成功！</h2>
+        <p style="font-size:13px; color:#a0b0c0;">请移步线下实验台化验未知溶液 A-E，推测 pH 值！</p>
+        <button class="btn-action btn-capture" onclick="goToStage2()">进入阶段二实战化验</button>
+    </div>
+</div>
+
+<!-- 最终通关弹窗 -->
+<div class="overlay" id="final-win-overlay" style="display:none;">
+    <div class="modal-box" style="border-color: var(--accent-gold);">
+        <h2 style="color: var(--accent-gold);">🏆 任务完成并成功提交！</h2>
+        <p style="font-size:14px; text-align:left; background:rgba(0,0,0,0.4); padding:15px; border-radius:6px; line-height:1.6;">
+            <b>得分结算：</b><span id="final-score" style="color:var(--accent-gold); font-weight:bold;"></span> 分<br>
+            <b>用时总计：</b><span id="final-time" style="color:var(--primary); font-family:monospace;"></span><br><br>
+            成绩已实时上传至现场排名大屏幕，请关注大屏排名！
+        </p>
+    </div>
+</div>
+
+<script>
+    // ---------------- 全局配置与状态 ----------------
+    var groupName = "", teamName = "";
+    var startTime = null, timerInterval = null, totalSeconds = 0;
+    var totalScore = 0;
+    var completedCount = 0;
+
+    var phColors = {
+        2: { hex: '#ff1a1a', desc: '鲜红 (强酸性)' }, 3: { hex: '#ff4d4d', desc: '深粉红 (酸性)' },
+        4: { hex: '#ff7799', desc: '粉红色 (酸性)' }, 5: { hex: '#ff99cc', desc: '淡粉红 (弱酸性)' },
+        6: { hex: '#b366ff', desc: '微紫红 (极弱酸性)' }, 7: { hex: '#9933ff', desc: '紫色不变 (中性)' },
+        8: { hex: '#3399ff', desc: '淡蓝色 (弱碱性)' }, 9: { hex: '#00cc99', desc: '蓝绿色 (弱碱性)' },
+        10: { hex: '#66ff66', desc: '翠绿色 (碱性)' }, 11: { hex: '#ccff33', desc: '黄绿色 (强碱性)' }
+    };
+
+    // 老师可在此修改标准答案：
+    var stage2Answers = { 'A': 3, 'B': 7, 'C': 10, 'D': 2, 'E': 8 };
+    
+    var sampleState = {
+        'A': { attempts: 0, score: 0, solved: false },
+        'B': { attempts: 0, score: 0, solved: false },
+        'C': { attempts: 0, score: 0, solved: false },
+        'D': { attempts: 0, score: 0, solved: false },
+        'E': { attempts: 0, score: 0, solved: false }
+    };
+
+    // ---------------- 1. 任务开始与计时 ----------------
+    function startMission() {
+        var tInput = document.getElementById('team-name-input');
+        var tName = tInput.value.trim();
+        
+        if(!tName) { 
+            alert("请输入小队名称！"); 
+            return; 
+        }
+        if(tName.length > 10) {
+            alert("小队名称不能超过10个字符！");
+            return;
+        }
+        
+        groupName = document.getElementById('group-select').value;
+        teamName = tName;
+        
+        document.getElementById('register-modal').style.display = 'none';
+        document.getElementById('status-bar-container').style.display = 'block';
+        document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
+        
+        startTime = new Date();
+        timerInterval = setInterval(function() {
+            totalSeconds = Math.floor((new Date() - startTime) / 1000);
+            var m = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            var s = String(totalSeconds % 60).padStart(2, '0');
+            document.getElementById('timer-display').innerText = m + ":" + s;
+        }, 1000);
+
+        renderStage2Cards();
+    }
+
+    // ---------------- 2. 阶段一逻辑 ----------------
+    var currentpH = 7, capturedpHs = new Set(), dripCount = 0, lastDirection = 0;
+    var bar = document.getElementById('spectrum-bar');
+    for(var i=2; i<=11; i++) {
+        bar.innerHTML += '<div class="color-slot" id="slot-' + i + '">' +
+            '<span style="font-weight:bold;">pH ' + i + '</span>' +
+            '<div class="color-block" id="block-' + i + '"></div>' +
+            '<span style="font-size:9px; color:#556b82;" id="txt-' + i + '">未捕获</span>' +
+            '</div>';
+    }
+
+    function triggerDrip(direction) {
+        if (lastDirection !== direction) {
+            dripCount = 0; lastDirection = direction;
+            document.getElementById('drip-loading').style.width = '0%';
+            document.getElementById('drip-text').innerText = '等待滴入... (0/3)';
+        }
+        var targetpH = currentpH + direction;
+        if (targetpH < 2 || targetpH > 11) return; 
+
+        var drop = document.getElementById('moving-drop');
+        var liquid = document.getElementById('beaker-liquid');
+        document.documentElement.style.setProperty('--drop-color', direction > 0 ? '#00ffcc' : '#ff4a4a');
+        
+        drop.classList.remove('drop-falling');
+        void drop.offsetWidth; drop.classList.add('drop-falling');
+
+        setTimeout(function() {
+            dripCount++;
+            document.getElementById('drip-loading').style.width = (dripCount / 3) * 100 + '%';
+            document.getElementById('drip-text').innerText = '已注入... (' + dripCount + '/3)';
+            liquid.classList.add('agitated');
+            setTimeout(function() { liquid.classList.remove('agitated'); }, 300);
+
+            if (dripCount >= 3) {
+                currentpH = targetpH;
+                document.getElementById('ph-val').innerText = currentpH;
+                var data = phColors[currentpH];
+                liquid.style.backgroundColor = data.hex;
+                document.getElementById('status-tip').innerText = '溶液受到足量滴定，质变为：' + data.desc;
+                dripCount = 0;
+                setTimeout(function() {
+                    document.getElementById('drip-loading').style.width = '0%';
+                    document.getElementById('drip-text').innerText = '等待滴入... (0/3)';
+                }, 300);
+            }
+        }, 350);
+    }
+
+    function captureColor() {
+        capturedpHs.add(currentpH);
+        var data = phColors[currentpH];
+        var block = document.getElementById('block-' + currentpH);
+        var txt = document.getElementById('txt-' + currentpH);
+        var slot = document.getElementById('slot-' + currentpH);
+        if (block && txt && slot) {
+            block.style.backgroundColor = data.hex;
+            txt.innerText = "已锁定"; txt.style.color = '#00ffcc';
+            slot.style.borderColor = '#00ffcc';
+        }
+        if(capturedpHs.size === 10) {
+            setTimeout(function() { document.getElementById('win-overlay').style.display = 'flex'; }, 400);
+        }
+    }
+
+    function goToStage2() {
+        document.getElementById('win-overlay').style.display = 'none';
+        var stage2 = document.getElementById('stage2-app');
+        stage2.classList.add('unlocked');
+        stage2.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // ---------------- 3. 阶段二渲染与验证 ----------------
+    function renderStage2Cards() {
+        var container = document.getElementById('sample-grid-container');
+        container.innerHTML = '';
+        ['A', 'B', 'C', 'D', 'E'].forEach(function(key) {
+            container.innerHTML += `
+                <div class="sample-card" id="card-${key}">
+                    <div class="sample-title">未知溶液 ${key}</div>
+                    <div class="sample-input-group">
+                        <span>pH =</span>
+                        <input type="number" class="sample-input" id="input-${key}" min="2" max="11" step="1" placeholder="2-11" oninput="validatePhInput(this)">
+                    </div>
+                    <button class="btn-verify-single" id="btn-verify-${key}" onclick="verifySingle('${key}')">验证答案</button>
+                    <div class="sample-status" id="status-${key}">尝试次数: 0/2</div>
+                </div>
+            `;
+        });
+    }
+
+    // pH 输入范围控制 (2~11)
+    function validatePhInput(inputEle) {
+        var val = parseInt(inputEle.value);
+        if (isNaN(val)) return;
+        if (val < 2) inputEle.value = 2;
+        if (val > 11) inputEle.value = 11;
+    }
+
+    function verifySingle(key) {
+        var state = sampleState[key];
+        if (state.solved || state.attempts >= 2) return;
+
+        var inputEle = document.getElementById('input-' + key);
+        var val = parseInt(inputEle.value);
+        var statusEle = document.getElementById('status-' + key);
+        var btnEle = document.getElementById('btn-verify-' + key);
+
+        if (isNaN(val) || val < 2 || val > 11) { 
+            alert("请输入 2 到 11 之间的有效整数 pH 值！"); 
+            return; 
+        }
+
+        state.attempts++;
+
+        if (val === stage2Answers[key]) {
+            state.solved = true;
+            state.score = (state.attempts === 1) ? 2 : 1;
+            totalScore += state.score;
+            
+            statusEle.innerText = `✅ 正确 (+${state.score}分)`;
+            statusEle.style.color = '#00ffcc';
+            inputEle.disabled = true;
+            btnEle.disabled = true;
+            completedCount++;
+        } else {
+            if (state.attempts === 1) {
+                statusEle.innerText = `❌ 错误！还有1次机会`;
+                statusEle.style.color = '#ff9900';
+            } else if (state.attempts >= 2) {
+                state.solved = true;
+                state.score = 0;
+                statusEle.innerText = `❌ 错误！该题得0分`;
+                statusEle.style.color = '#ff4a4a';
+                inputEle.disabled = true;
+                btnEle.disabled = true;
+                completedCount++;
+            }
+        }
+
+        document.getElementById('score-display').innerText = totalScore;
+
+        if (completedCount === 5) {
+            finishMission();
+        }
+    }
+
+    // ---------------- 4. 完成与存储 ----------------
+    function finishMission() {
+        clearInterval(timerInterval);
+        
+        var timeFormatted = document.getElementById('timer-display').innerText;
+        document.getElementById('final-score').innerText = totalScore;
+        document.getElementById('final-time').innerText = timeFormatted;
+
+        var payload = {
+            group: groupName,
+            team: teamName,
+            score: totalScore,
+            time_used: timeFormatted,
+            total_seconds: totalSeconds,
+            timestamp: new Date().toISOString()
+        };
+
+        var history = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
+        history.push(payload);
+        localStorage.setItem('camp_leaderboard', JSON.stringify(history));
+
+        document.getElementById('final-win-overlay').style.display = 'flex';
+    }
+</script>
+</body>
+</html>
