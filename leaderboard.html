@@ -24,6 +24,79 @@
             background: rgba(0,255,204,0.1); border: 1px solid #00ffcc;
             padding: 3px 8px; border-radius: 4px; font-size: 14px; color: #00ffcc;
         }
+        
+        /* 控制按钮区域 */
+        .action-bar {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .btn-control {
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+        .btn-export {
+            background: #00ffcc;
+            color: #0a1118;
+        }
+        .btn-export:hover {
+            background: #00cc99;
+            box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
+        }
+        .btn-clear {
+            background: rgba(255, 74, 74, 0.2);
+            color: #ff4a4a;
+            border: 1px solid #ff4a4a;
+        }
+        .btn-clear:hover {
+            background: #ff4a4a;
+            color: #fff;
+            box-shadow: 0 0 12px rgba(255, 74, 74, 0.4);
+        }
+
+        /* PDF 导出打印样式优化 */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+                padding: 10px;
+            }
+            h1 {
+                color: #000000 !important;
+                text-shadow: none !important;
+                font-size: 24px;
+            }
+            .board-container {
+                border: 1px solid #ccc !important;
+                box-shadow: none !important;
+                background: #ffffff !important;
+            }
+            th {
+                color: #000000 !important;
+                border-bottom: 2px solid #000 !important;
+            }
+            td {
+                color: #000000 !important;
+                border-bottom: 1px solid #ddd !important;
+            }
+            tr:nth-child(1) td, tr:nth-child(2) td, tr:nth-child(3) td {
+                color: #000000 !important;
+            }
+            .badge {
+                border: 1px solid #666 !important;
+                color: #000 !important;
+                background: none !important;
+            }
+            .action-bar {
+                display: none !important; /* 导出时隐藏按钮 */
+            }
+        }
     </style>
 </head>
 <body>
@@ -44,11 +117,17 @@
                 <!-- 动态渲染 -->
             </tbody>
         </table>
+
+        <!-- 控制按钮区域 -->
+        <div class="action-bar">
+            <button class="btn-control btn-export" onclick="exportToPDF()">📄 导出成绩单 (PDF)</button>
+            <button class="btn-control btn-clear" onclick="clearLeaderboard()">🗑️ 清除所有成绩</button>
+        </div>
     </div>
 
 <script>
     function updateLeaderboard() {
-        // 读取数据 (此处示例从 localStorage 读取，实际上可改为从数据库/API Fetch)
+        // 读取数据
         var data = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
 
         // 排序规则：得分从高到低；若得分相同，用时（秒数）从小到大
@@ -80,6 +159,37 @@
                 </tr>
             `;
         });
+    }
+
+    // 1. 导出 PDF 功能 (调用原生打印弹窗，另存为 PDF)
+    function exportToPDF() {
+        var data = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
+        if (data.length === 0) {
+            alert("目前暂无比赛成绩，无需导出！");
+            return;
+        }
+        window.print();
+    }
+
+    // 2. 清除成绩功能 (带安全询问弹窗)
+    function clearLeaderboard() {
+        var data = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
+        if (data.length === 0) {
+            alert("榜单目前已经是空的！");
+            return;
+        }
+
+        // 第一重确认
+        var confirm1 = confirm("⚠️ 警告：您确定要清除所有小队的成绩记录吗？");
+        if (confirm1) {
+            // 第二重确认：确保已保存/导出
+            var confirm2 = confirm("🚨 请再次确认：您是否已经【导出/保存】了当前的成绩单？\n\n点击【确定】将永久删除本次营会的所有成绩！");
+            if (confirm2) {
+                localStorage.removeItem('camp_leaderboard');
+                updateLeaderboard();
+                alert("成绩记录已成功清空，可以开始新一轮的营会挑战！");
+            }
+        }
     }
 
     // 初始更新并每 3 秒自动刷新现场排行榜
