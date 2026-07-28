@@ -173,7 +173,7 @@
             display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10, 17, 24, 0.96); z-index: 1000; justify-content: center; align-items: center;
         }
-        .modal-box { border: 2px solid var(--primary); padding: 25px; background: var(--panel-bg); border-radius: 12px; max-width: 550px; width: 92%; max-height: 90vh; overflow-y: auto; }
+        .modal-box { border: 2px solid var(--primary); padding: 25px; background: var(--panel-bg); border-radius: 12px; max-width: 680px; width: 92%; max-height: 90vh; overflow-y: auto; }
         .form-group { margin-bottom: 12px; text-align: left; }
         .form-group label { display: block; font-size: 13px; color: #a0b0c0; margin-bottom: 5px; }
         .form-control {
@@ -215,9 +215,13 @@
         .my-team-row { background: rgba(0,255,204,0.15); font-weight: bold; color: #00ffcc; }
         .penalty-tag { color: #ff4a4a; font-size: 10px; font-weight: bold; }
         
-        .answer-tag { display: inline-block; padding: 2px 4px; border-radius: 3px; font-size: 10px; margin: 1px; }
-        .answer-correct { background: rgba(0,255,204,0.2); color: #00ffcc; border: 1px solid #00ffcc; }
-        .answer-wrong { background: rgba(255,74,74,0.2); color: #ff4a4a; border: 1px solid #ff4a4a; }
+        .detail-tag {
+            display: inline-block; padding: 2px 5px; border-radius: 3px; font-size: 10px; font-family: monospace; margin: 1px;
+        }
+        .tag-correct-2 { background: rgba(0, 255, 204, 0.2); border: 1px solid #00ffcc; color: #00ffcc; }
+        .tag-correct-1 { background: rgba(255, 215, 0, 0.2); border: 1px solid #ffd700; color: #ffd700; }
+        .tag-wrong-0 { background: rgba(255, 74, 74, 0.2); border: 1px solid #ff4a4a; color: #ff4a4a; }
+        .tag-unsolved { background: rgba(255, 255, 255, 0.1); border: 1px solid #777; color: #aaa; }
     </style>
 </head>
 <body>
@@ -338,7 +342,7 @@
     <div class="sample-grid" id="sample-grid-container"></div>
 </div>
 
-<!-- 🚨 3. 罚时/合格 专属独立提醒弹窗 -->
+<!-- 3. 罚时/合格 专属独立提醒弹窗 -->
 <div class="overlay" id="penalty-alert-modal" style="display:none; z-index:1100;">
     <div class="modal-box" id="penalty-alert-box" style="text-align:center;">
         <h2 id="penalty-alert-title" style="font-size:22px; margin-top:0;"></h2>
@@ -428,6 +432,7 @@
 
     var totalScore = 0;
     var completedCount = 0;
+    var isMissionFinished = false;
 
     var phColors = {
         2: { hex: '#ff1a1a', desc: '鲜红 (强酸性)' }, 3: { hex: '#ff4d4d', desc: '深粉红 (酸性)' },
@@ -437,7 +442,7 @@
         10: { hex: '#66ff66', desc: '翠绿色 (碱性)' }, 11: { hex: '#ccff33', desc: '黄绿色 (强碱性)' }
     };
 
-    // 默认参考答案（当老师未设定时使用）
+    // 默认参考答案 (若老师未设置)
     var stage2Answers = { 'A': '强酸性', 'B': '弱酸性', 'C': '中性', 'D': '弱碱性', 'E': '强碱性' };
     
     var sampleState = {
@@ -466,13 +471,6 @@
         db.ref('current_round_id').once('value', (snap) => {
             currentRoundId = snap.val() || '1';
             
-            // 实时同步本轮老师设定的答案
-            db.ref(`rounds/${currentRoundId}/answers`).once('value', (ansSnap) => {
-                if (ansSnap.exists()) {
-                    stage2Answers = ansSnap.val();
-                }
-            });
-
             db.ref(`rounds/${currentRoundId}/pin`).once('value', (pinSnap) => {
                 var correctPin = pinSnap.val() || '5829';
                 var userPin = document.getElementById('pin-code-input').value.trim();
@@ -505,14 +503,15 @@
         });
     }
 
-    // Firebase 实时监听广播信号
+    // Firebase 实时监听广播信号与标准答案
     function listenGlobalSignal() {
         if (!teamName) return;
 
-        // 监听老师设置答案变动
-        db.ref(`rounds/${currentRoundId}/answers`).on('value', (ansSnap) => {
-            if (ansSnap.exists()) {
-                stage2Answers = ansSnap.val();
+        // 0. 监听老师端设置的动态参考答案
+        db.ref(`rounds/${currentRoundId}/answers`).on('value', (snap) => {
+            var cloudAns = snap.val();
+            if (cloudAns) {
+                stage2Answers = cloudAns;
             }
         });
 
@@ -521,8 +520,14 @@
             var roomState = snapshot.val() || {};
 
             if (roomState.status === 'ended') {
-                alert('📢 老师已宣布本轮比赛结束！');
                 disableAllControls();
+                // 若比赛被老师强制结束且同学未提交最终结果，自动帮其强制结算
+                if (!isMissionFinished) {
+                    alert('📢 老师已宣布本轮比赛结束！系统已自动为您结算当前成绩。');
+                    finishMission(true);
+                } else {
+                    alert('📢 老师已宣布本轮比赛结束！');
+                }
                 return;
             }
 
@@ -541,7 +546,7 @@
         });
 
         db.ref(`rounds/${currentRoundId}/leaderboard`).on('value', (snap) => {
-            if (completedCount === 5) renderStudentLeaderboard(snap.val() || {});
+            if (isMissionFinished) renderStudentLeaderboard(snap.val() || {});
         });
     }
 
@@ -693,6 +698,7 @@
         document.getElementById('win-overlay').style.display = 'flex';
     }
 
+    // 上传阶段一数据到 Firebase
     function submitStage1Result() {
         var payload = {
             group: groupName,
@@ -795,7 +801,7 @@
         if (!userVal) { alert("请先选择该溶液的酸碱性！"); return; }
 
         state.attempts++;
-        state.userChoice = userVal; // 记录最终选择
+        state.userChoice = userVal;
 
         if (userVal === stage2Answers[key]) {
             state.solved = true;
@@ -829,8 +835,13 @@
         }
     }
 
-    function finishMission() {
+    function finishMission(isForced = false) {
+        if (isMissionFinished) return;
+        isMissionFinished = true;
         clearInterval(stage2Timer);
+        
+        disableAllControls();
+
         var penaltySec = hasPenalty ? 30 : 0;
         var finalStage2Sec = stage2Seconds + penaltySec;
         var totalSec = stage1Seconds + finalStage2Sec;
@@ -841,30 +852,27 @@
         document.getElementById('final-time-total').innerText = fmtTime(totalSec);
         document.getElementById('penalty-text-display').innerHTML = hasPenalty ? ' | <b class="penalty-tag">含30s超时罚时</b>' : '';
 
-        // 构造详细作答记录
-        var detailsPayload = {};
-        ['A', 'B', 'C', 'D', 'E'].forEach(k => {
-            detailsPayload[k] = {
-                choice: sampleState[k].userChoice,
-                attempts: sampleState[k].attempts,
-                score: sampleState[k].score
-            };
-        });
-
         var payload = {
             group: groupName,
             team: teamName,
             score: totalScore,
-            details: detailsPayload,
+            details: {
+                'A': { score: sampleState['A'].score, attempts: sampleState['A'].attempts, choice: sampleState['A'].userChoice || '未答' },
+                'B': { score: sampleState['B'].score, attempts: sampleState['B'].attempts, choice: sampleState['B'].userChoice || '未答' },
+                'C': { score: sampleState['C'].score, attempts: sampleState['C'].attempts, choice: sampleState['C'].userChoice || '未答' },
+                'D': { score: sampleState['D'].score, attempts: sampleState['D'].attempts, choice: sampleState['D'].userChoice || '未答' },
+                'E': { score: sampleState['E'].score, attempts: sampleState['E'].attempts, choice: sampleState['E'].userChoice || '未答' }
+            },
             time_stage1: fmtTime(stage1Seconds),
             time_stage2: fmtTime(finalStage2Sec) + (hasPenalty ? " (+30s)" : ""),
             time_used: fmtTime(totalSec),
             total_seconds: totalSec,
             hasPenalty: hasPenalty,
+            isForced: isForced,
             timestamp: new Date().toISOString()
         };
 
-        // 上传最终成绩与明细到云端总榜
+        // 🌟 上传最终成绩到云端总榜
         db.ref(`rounds/${currentRoundId}/leaderboard/${groupName}`).set(payload);
 
         document.getElementById('final-win-overlay').style.display = 'flex';
@@ -882,20 +890,14 @@
             var rowClass = isMyTeam ? 'class="my-team-row"' : '';
             var rank = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
             
-            // 格式化展示个人/全班答题明细
+            // 拼接每题明细
             var detailsHtml = '';
-            if (item.details) {
-                ['A', 'B', 'C', 'D', 'E'].forEach(k => {
-                    var d = item.details[k];
-                    if (d) {
-                        var isCorrect = d.score > 0;
-                        var css = isCorrect ? 'answer-correct' : 'answer-wrong';
-                        detailsHtml += `<span class="answer-tag ${css}">${k}:${d.choice || '未答'}(${d.score}分)</span>`;
-                    }
-                });
-            } else {
-                detailsHtml = '<span style="color:#888;">无明细</span>';
-            }
+            ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+                var d = (item.details && item.details[k]) ? item.details[k] : { score: 0, attempts: 0 };
+                var tagClass = d.attempts === 0 ? 'tag-unsolved' : (d.score === 2 ? 'tag-correct-2' : (d.score === 1 ? 'tag-correct-1' : 'tag-wrong-0'));
+                var symbol = d.attempts === 0 ? '-' : (d.score > 0 ? '✓' : '✗');
+                detailsHtml += `<span class="detail-tag ${tagClass}">${k}:${symbol}${d.score}分</span>`;
+            });
 
             tbody.innerHTML += `
                 <tr ${rowClass}>
