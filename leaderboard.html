@@ -2,199 +2,592 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>小六才艺营 - 科学站实操现场大榜</title>
+    <title>小六才艺营 - 科学站实时风云榜 (老师控制台)</title>
     <style>
         body {
             background-color: #0a1118; color: #fff;
-            font-family: 'Microsoft YaHei', sans-serif; padding: 30px; text-align: center;
+            font-family: 'Microsoft YaHei', sans-serif; padding: 20px; text-align: center;
         }
-        h1 { color: #00ffcc; font-size: 36px; text-shadow: 0 0 15px rgba(0,255,204,0.4); margin-bottom: 20px; }
-        .board-container {
-            max-width: 900px; margin: 0 auto; background: #132230;
-            border: 2px solid #00ffcc; border-radius: 12px; padding: 20px;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8);
-        }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 15px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        th { color: #ffd700; font-size: 18px; border-bottom: 2px solid #ffd700; }
-        tr:nth-child(1) td { color: #ffd700; font-weight: bold; font-size: 22px; }
-        tr:nth-child(2) td { color: #c0c0c0; font-weight: bold; font-size: 19px; }
-        tr:nth-child(3) td { color: #cd7f32; font-weight: bold; font-size: 18px; }
-        .badge {
-            background: rgba(0,255,204,0.1); border: 1px solid #00ffcc;
-            padding: 3px 8px; border-radius: 4px; font-size: 14px; color: #00ffcc;
-        }
+        h1 { color: #00ffcc; font-size: 32px; text-shadow: 0 0 15px rgba(0,255,204,0.4); margin-bottom: 10px; }
         
-        /* 控制按钮区域 */
-        .action-bar {
-            margin-top: 25px;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
+        .round-selector-bar {
+            display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;
         }
-        .btn-control {
-            padding: 10px 20px;
-            font-size: 14px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
+        .round-btn {
+            background: rgba(255,255,255,0.1); border: 1px solid #555; color: #ccc;
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
         }
-        .btn-export {
-            background: #00ffcc;
-            color: #0a1118;
-        }
-        .btn-export:hover {
-            background: #00cc99;
-            box-shadow: 0 0 12px rgba(0, 255, 204, 0.4);
-        }
-        .btn-clear {
-            background: rgba(255, 74, 74, 0.2);
-            color: #ff4a4a;
-            border: 1px solid #ff4a4a;
-        }
-        .btn-clear:hover {
-            background: #ff4a4a;
-            color: #fff;
-            box-shadow: 0 0 12px rgba(255, 74, 74, 0.4);
+        .round-btn.active { background: #00ffcc; color: #0a1118; border-color: #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.4); }
+        .btn-new-round { background: #ffd700; color: #0a1118; border: none; font-weight: bold; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
+
+        .board-container {
+            max-width: 980px; margin: 0 auto; background: #132230;
+            border: 2px solid #00ffcc; border-radius: 12px; padding: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8); position: relative;
         }
 
-        /* PDF 导出打印样式优化 */
+        /* PIN 码卡片展示 */
+        .pin-display-card {
+            background: rgba(255, 215, 0, 0.1); border: 2px solid #ffd700; border-radius: 10px;
+            padding: 12px 20px; margin-bottom: 15px; display: inline-flex; align-items: center; gap: 15px;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+        .pin-number {
+            font-size: 32px; font-family: monospace; font-weight: bold; color: #ffd700; letter-spacing: 6px;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        
+        .control-panel-box {
+            background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(0,255,204,0.3);
+            padding: 15px; border-radius: 8px; margin-bottom: 15px;
+            display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 12px;
+        }
+
+        .registered-box {
+            background: rgba(0, 0, 0, 0.2); border: 1px solid #334e68; border-radius: 6px; padding: 10px; margin-bottom: 15px; text-align: left;
+        }
+        .reg-tag {
+            display: inline-block; background: rgba(0,255,204,0.1); border: 1px solid #00ffcc;
+            color: #00ffcc; font-size: 12px; padding: 3px 8px; border-radius: 4px; margin: 3px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px 6px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        th { color: #ffd700; font-size: 15px; border-bottom: 2px solid #ffd700; }
+        tr:nth-child(1) td { color: #ffd700; font-weight: bold; font-size: 18px; }
+        tr:nth-child(2) td { color: #c0c0c0; font-weight: bold; font-size: 17px; }
+        tr:nth-child(3) td { color: #cd7f32; font-weight: bold; font-size: 16px; }
+        .badge {
+            background: rgba(0,255,204,0.1); border: 1px solid #00ffcc;
+            padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #00ffcc;
+        }
+        
+        .btn-ctrl {
+            padding: 8px 16px; font-size: 13px; font-weight: bold; border-radius: 6px;
+            cursor: pointer; transition: all 0.2s; border: none;
+        }
+        .btn-stage1 { background: #00ffcc; color: #0a1118; }
+        .btn-stage2 { background: #ffd700; color: #0a1118; }
+        .btn-end { background: #ff4a4a; color: #fff; }
+        .btn-ceremony {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #0a1118; box-shadow: 0 0 15px rgba(255,215,0,0.5); font-size: 14px;
+        }
+        .btn-ceremony:hover { box-shadow: 0 0 25px rgba(255,215,0,0.8); transform: scale(1.03); }
+        .btn-export { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #aaa; }
+        .btn-ctrl:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        
+        /* 罚时标签 */
+        .penalty-tag-yes { background: rgba(255, 74, 74, 0.2); border: 1px solid #ff4a4a; color: #ff4a4a; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+        .penalty-tag-no { color: #00ffcc; font-size: 11px; }
+
+        /* 领奖台样式 */
+        .overlay {
+            display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 17, 24, 0.95); z-index: 2000; justify-content: center; align-items: center;
+        }
+        .podium-modal {
+            background: #132230; border: 3px solid #ffd700; border-radius: 16px;
+            padding: 30px 20px; max-width: 750px; width: 92%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
+            position: relative; overflow: hidden;
+        }
+        .podium-stage {
+            display: flex; justify-content: center; align-items: flex-end;
+            margin-top: 40px; margin-bottom: 20px; gap: 15px; height: 260px;
+        }
+        .podium-step {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+            border-radius: 8px 8px 0 0; position: relative; transition: all 0.5s ease;
+        }
+        .step-1 {
+            height: 180px; background: linear-gradient(180deg, #ffd700, #b38f00);
+            border: 2px solid #fff; box-shadow: 0 0 20px rgba(255,215,0,0.6); order: 2;
+        }
+        .step-2 {
+            height: 130px; background: linear-gradient(180deg, #c0c0c0, #7f8c8d);
+            border: 2px solid #fff; order: 1;
+        }
+        .step-3 {
+            height: 90px; background: linear-gradient(180deg, #cd7f32, #8b4513);
+            border: 2px solid #fff; order: 3;
+        }
+        
+        .podium-card {
+            position: absolute; top: -110px; width: 95%; text-align: center;
+            background: rgba(10, 17, 24, 0.85); border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 4px; border-radius: 8px; backdrop-filter: blur(5px);
+        }
+        .podium-crown { font-size: 28px; line-height: 1; margin-bottom: 2px; }
+        .podium-team-name { font-size: 16px; font-weight: bold; color: #fff; text-shadow: 0 0 8px rgba(0,0,0,0.8); }
+        .podium-group-tag { font-size: 11px; color: #00ffcc; margin-top: 2px; }
+        .podium-score { font-size: 13px; color: #ffd700; font-weight: bold; margin-top: 2px; }
+        .podium-rank-num { font-size: 42px; font-weight: 900; color: rgba(255,255,255,0.3); }
+
+        #confetti-canvas {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 2001;
+        }
+
         @media print {
-            body {
-                background-color: #ffffff !important;
-                color: #000000 !important;
-                padding: 10px;
-            }
-            h1 {
-                color: #000000 !important;
-                text-shadow: none !important;
-                font-size: 24px;
-            }
-            .board-container {
-                border: 1px solid #ccc !important;
-                box-shadow: none !important;
-                background: #ffffff !important;
-            }
-            th {
-                color: #000000 !important;
-                border-bottom: 2px solid #000 !important;
-            }
-            td {
-                color: #000000 !important;
-                border-bottom: 1px solid #ddd !important;
-            }
-            tr:nth-child(1) td, tr:nth-child(2) td, tr:nth-child(3) td {
-                color: #000000 !important;
-            }
-            .badge {
-                border: 1px solid #666 !important;
-                color: #000 !important;
-                background: none !important;
-            }
-            .action-bar {
-                display: none !important; /* 导出时隐藏按钮 */
-            }
+            body { background-color: #ffffff !important; color: #000000 !important; padding: 10px; }
+            h1 { color: #000000 !important; text-shadow: none !important; font-size: 24px; }
+            .board-container { border: 1px solid #ccc !important; box-shadow: none !important; background: #ffffff !important; }
+            th { color: #000000 !important; border-bottom: 2px solid #000 !important; }
+            td { color: #000000 !important; border-bottom: 1px solid #ddd !important; }
+            .badge { border: 1px solid #666 !important; color: #000 !important; background: none !important; }
+            .round-selector-bar, .control-panel-box, .registered-box, .action-bar, .overlay, .pin-display-card { display: none !important; }
         }
     </style>
 </head>
 <body>
 
+    <!-- 撒花 Canvas -->
+    <canvas id="confetti-canvas"></canvas>
+
     <h1>🏆 小六才艺营 - 科学站实时风云榜</h1>
+    
+    <!-- 比赛轮次选择栏 -->
+    <div class="round-selector-bar">
+        <span><b>比赛轮次：</b></span>
+        <div id="round-buttons-list" style="display:inline-flex; gap:6px; flex-wrap:wrap;"></div>
+        <button class="btn-new-round" onclick="addNewRound()">➕ 开启新一轮比赛</button>
+    </div>
+
+    <!-- 现场 PIN 码展示卡片 -->
+    <div class="pin-display-card">
+        <span style="font-size:15px; color:#fff; font-weight:bold;">🔑 第 <span id="pin-round-num">1</span> 轮 现场 PIN 码：</span>
+        <span class="pin-number" id="current-pin-display">----</span>
+        <button onclick="generateNewPin()" style="background:rgba(255,255,255,0.1); border:1px solid #ffd700; color:#ffd700; border-radius:4px; padding:4px 8px; cursor:pointer; font-size:11px;">🔄 刷新PIN</button>
+    </div>
+
     <div class="board-container">
+        <!-- 控制台 -->
+        <div class="control-panel-box">
+            <div>
+                状态：<b id="status-text" style="color:#ffd700;">等待开始</b>
+            </div>
+            <button class="btn-ctrl btn-stage1" id="btn-start-s1" onclick="startStage1()">🚀 启动阶段一 (开始比赛)</button>
+            <button class="btn-ctrl btn-stage2" id="btn-start-s2" onclick="startStage2()" disabled>🧪 启动阶段二统一答题</button>
+            <button class="btn-ctrl btn-end" id="btn-end-round" onclick="endCurrentRound()">🏁 结束本轮比赛</button>
+            <button class="btn-ctrl btn-ceremony" id="btn-ceremony" onclick="openCeremonyModal()">🏆 颁奖盛典 (成绩检视)</button>
+        </div>
+
+        <!-- 已登记的小队卡片展示 -->
+        <div class="registered-box">
+            <span style="font-size:12px; color:#a0b0c0;">📌 本轮已登记小队 (<span id="reg-count">0</span>)：</span>
+            <div id="registered-teams-list" style="margin-top:5px;"></div>
+        </div>
+
+        <!-- 动态表格 -->
+        <h3 id="table-title" style="color:var(--primary); font-size:16px; text-align:left; margin:15px 0 5px 0;">📊 实时榜单：</h3>
         <table>
-            <thead>
+            <thead id="leaderboard-head"></thead>
+            <tbody id="leaderboard-body"></tbody>
+        </table>
+
+        <div style="margin-top:20px; display:flex; justify-content:center; gap:10px;">
+            <button class="btn-ctrl btn-export" onclick="exportPDF()">📄 导出本轮成绩单 (PDF)</button>
+            <button class="btn-ctrl btn-end" style="background:rgba(255,74,74,0.2); border:1px solid #ff4a4a;" onclick="clearCurrentRoundData()">🗑️ 清空本轮成绩数据</button>
+        </div>
+    </div>
+
+    <!-- 颁奖盛典领奖台弹窗 -->
+    <div class="overlay" id="ceremony-modal" style="display:none;">
+        <div class="podium-modal">
+            <h2 style="color:#ffd700; font-size:28px; margin:0; text-shadow:0 0 15px rgba(255,215,0,0.6);">🎉 第 <span id="podium-round-num">1</span> 轮 · 荣耀颁奖台 🎉</h2>
+            <p style="color:#a0b0c0; font-size:13px; margin-top:5px;">热烈祝贺本轮表现最出色的特工小队！</p>
+
+            <div class="podium-stage">
+                <!-- 亚军 (第 2 名) -->
+                <div class="podium-step step-2">
+                    <div class="podium-card" id="card-rank-2">
+                        <div class="podium-crown">🥈</div>
+                        <div class="podium-team-name" id="name-rank-2">虚位以待</div>
+                        <div class="podium-group-tag" id="group-rank-2">-</div>
+                        <div class="podium-score" id="score-rank-2">-</div>
+                    </div>
+                    <div class="podium-rank-num">2</div>
+                </div>
+
+                <!-- 冠军 (第 1 名) -->
+                <div class="podium-step step-1">
+                    <div class="podium-card" id="card-rank-1" style="border-color:#ffd700; box-shadow:0 0 15px rgba(255,215,0,0.3);">
+                        <div class="podium-crown">🥇</div>
+                        <div class="podium-team-name" id="name-rank-1" style="color:#ffd700; font-size:18px;">虚位以待</div>
+                        <div class="podium-group-tag" id="group-rank-1">-</div>
+                        <div class="podium-score" id="score-rank-1">-</div>
+                    </div>
+                    <div class="podium-rank-num" style="color:rgba(255,215,0,0.4);">1</div>
+                </div>
+
+                <!-- 季军 (第 3 名) -->
+                <div class="podium-step step-3">
+                    <div class="podium-card" id="card-rank-3">
+                        <div class="podium-crown">🥉</div>
+                        <div class="podium-team-name" id="name-rank-3">虚位以待</div>
+                        <div class="podium-group-tag" id="group-rank-3">-</div>
+                        <div class="podium-score" id="score-rank-3">-</div>
+                    </div>
+                    <div class="podium-rank-num">3</div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:center; gap:15px; margin-top:15px;">
+                <button class="btn-ctrl btn-ceremony" onclick="triggerCelebrationEffects()">🎆 再次触发撒花音效</button>
+                <button class="btn-ctrl btn-export" onclick="closeCeremonyModal()">关闭检视</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    var currentRoundId = '1';
+
+    function initRounds() {
+        var rounds = JSON.parse(localStorage.getItem('camp_rounds_list') || '["1"]');
+        currentRoundId = localStorage.getItem('camp_current_round_id') || rounds[rounds.length - 1];
+        
+        ensurePinExists(currentRoundId);
+        renderRoundButtons(rounds);
+        syncUI();
+    }
+
+    function ensurePinExists(rId) {
+        var pin = localStorage.getItem('camp_pin_' + rId);
+        if (!pin) {
+            pin = String(Math.floor(1000 + Math.random() * 9000));
+            localStorage.setItem('camp_pin_' + rId, pin);
+        }
+        document.getElementById('pin-round-num').innerText = rId;
+        document.getElementById('current-pin-display').innerText = pin;
+    }
+
+    function generateNewPin() {
+        var pin = String(Math.floor(1000 + Math.random() * 9000));
+        localStorage.setItem('camp_pin_' + currentRoundId, pin);
+        document.getElementById('current-pin-display').innerText = pin;
+        alert(`🔑 已为第 ${currentRoundId} 轮生成新 PIN 码：${pin}`);
+    }
+
+    function renderRoundButtons(rounds) {
+        var container = document.getElementById('round-buttons-list');
+        container.innerHTML = '';
+        rounds.forEach(r => {
+            var activeClass = (r === currentRoundId) ? 'active' : '';
+            container.innerHTML += `<button class="round-btn ${activeClass}" onclick="switchRound('${r}')">第 ${r} 轮</button>`;
+        });
+    }
+
+    function switchRound(rId) {
+        currentRoundId = rId;
+        localStorage.setItem('camp_current_round_id', rId);
+        var rounds = JSON.parse(localStorage.getItem('camp_rounds_list') || '["1"]');
+        ensurePinExists(rId);
+        renderRoundButtons(rounds);
+        syncUI();
+    }
+
+    function addNewRound() {
+        var rounds = JSON.parse(localStorage.getItem('camp_rounds_list') || '["1"]');
+        var newId = String(parseInt(rounds[rounds.length - 1] || '0') + 1);
+        rounds.push(newId);
+        localStorage.setItem('camp_rounds_list', JSON.stringify(rounds));
+        switchRound(newId);
+    }
+
+    function getRoomState() {
+        return JSON.parse(localStorage.getItem('camp_room_state_' + currentRoundId) || '{"status":"waiting"}');
+    }
+
+    function saveRoomState(state) {
+        localStorage.setItem('camp_room_state_' + currentRoundId, JSON.stringify(state));
+        syncUI();
+    }
+
+    function startStage1() {
+        if (confirm("📢 是否确认立即统一开启【阶段一】？")) {
+            var state = getRoomState();
+            state.status = 'stage1';
+            state.stage1_started = true;
+            state.stage1_time = new Date().toISOString();
+            saveRoomState(state);
+        }
+    }
+
+    function startStage2() {
+        if (confirm("📢 是否确认立即统一开启【阶段二线下实战】？")) {
+            var state = getRoomState();
+            state.status = 'stage2';
+            state.stage2_started = true;
+            state.stage2_time = new Date().toISOString();
+            saveRoomState(state);
+        }
+    }
+
+    function endCurrentRound() {
+        if (confirm("⚠️ 确定要结束本轮比赛吗？结束后学生将无法再提交成绩！")) {
+            var state = getRoomState();
+            state.status = 'ended';
+            saveRoomState(state);
+        }
+    }
+
+    function syncUI() {
+        var state = getRoomState();
+        var statusTxt = document.getElementById('status-text');
+        var btnS1 = document.getElementById('btn-start-s1');
+        var btnS2 = document.getElementById('btn-start-s2');
+        var btnEnd = document.getElementById('btn-end-round');
+
+        if (state.status === 'waiting') {
+            statusTxt.innerText = `第 ${currentRoundId} 轮：等待小队登记...`;
+            statusTxt.style.color = "#ffd700";
+            btnS1.disabled = false; btnS2.disabled = true; btnEnd.disabled = false;
+        } else if (state.status === 'stage1') {
+            statusTxt.innerText = `第 ${currentRoundId} 轮：阶段一进行中...`;
+            statusTxt.style.color = "#00ffcc";
+            btnS1.disabled = true; btnS2.disabled = false; btnEnd.disabled = false;
+        } else if (state.status === 'stage2') {
+            statusTxt.innerText = `第 ${currentRoundId} 轮：阶段二实战化验中...`;
+            statusTxt.style.color = "#00ffcc";
+            btnS1.disabled = true; btnS2.disabled = true; btnEnd.disabled = false;
+        } else if (state.status === 'ended') {
+            statusTxt.innerText = `第 ${currentRoundId} 轮：比赛已宣布结束 (已锁定)`;
+            statusTxt.style.color = "#ff4a4a";
+            btnS1.disabled = true; btnS2.disabled = true; btnEnd.disabled = true;
+        }
+
+        renderRegisteredTeams();
+        updateLeaderboard(state.status);
+    }
+
+    function renderRegisteredTeams() {
+        var regs = JSON.parse(localStorage.getItem('camp_registered_teams_' + currentRoundId) || '[]');
+        document.getElementById('reg-count').innerText = regs.length;
+        var container = document.getElementById('registered-teams-list');
+        if (regs.length === 0) {
+            container.innerHTML = '<span style="font-size:12px; color:#666;">暂无小队登记</span>';
+            return;
+        }
+        container.innerHTML = '';
+        regs.forEach(r => {
+            container.innerHTML += `<span class="reg-tag"><b>${r.group}</b>: ${r.team}</span>`;
+        });
+    }
+
+    function updateLeaderboard(status) {
+        var head = document.getElementById('leaderboard-head');
+        var tbody = document.getElementById('leaderboard-body');
+        var title = document.getElementById('table-title');
+
+        if (status === 'stage1') {
+            title.innerText = "⏱️ 第一阶段捕获即时榜 (完成即可上榜)：";
+            head.innerHTML = `
+                <tr>
+                    <th>名次</th>
+                    <th>组别</th>
+                    <th>小队名称</th>
+                    <th>阶段一纯用时</th>
+                    <th>罚时判定 (>60s)</th>
+                </tr>
+            `;
+
+            var s1Data = JSON.parse(localStorage.getItem('camp_stage1_results_' + currentRoundId) || '[]');
+            s1Data.sort((a,b) => a.s1_seconds - b.s1_seconds);
+
+            tbody.innerHTML = '';
+            if (s1Data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="color:#88a0b5;">等待小队完成第一阶段...</td></tr>';
+                return;
+            }
+
+            s1Data.forEach((item, index) => {
+                var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
+                var penText = item.hasPenalty ? '<span class="penalty-tag-yes">⚠️ 超时 (+30s 罚时)</span>' : '<span class="penalty-tag-no">✅ 合格</span>';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${rankIcon}</td>
+                        <td><span class="badge">${item.group}</span></td>
+                        <td>${item.team}</td>
+                        <td style="font-family:monospace; font-weight:bold; color:#00ffcc;">${item.time_s1}</td>
+                        <td>${penText}</td>
+                    </tr>
+                `;
+            });
+
+        } else {
+            title.innerText = "🏆 本轮最终风云总榜：";
+            head.innerHTML = `
                 <tr>
                     <th>名次</th>
                     <th>组别</th>
                     <th>小队名称</th>
                     <th>得分 (满分10)</th>
-                    <th>完成用时</th>
-                </tr>
-            </thead>
-            <tbody id="leaderboard-body">
-                <!-- 动态渲染 -->
-            </tbody>
-        </table>
-
-        <!-- 控制按钮区域 -->
-        <div class="action-bar">
-            <button class="btn-control btn-export" onclick="exportToPDF()">📄 导出成绩单 (PDF)</button>
-            <button class="btn-control btn-clear" onclick="clearLeaderboard()">🗑️ 清除所有成绩</button>
-        </div>
-    </div>
-
-<script>
-    function updateLeaderboard() {
-        // 读取数据
-        var data = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
-
-        // 排序规则：得分从高到低；若得分相同，用时（秒数）从小到大
-        data.sort(function(a, b) {
-            if (b.score !== a.score) {
-                return b.score - a.score;
-            } else {
-                return a.total_seconds - b.total_seconds;
-            }
-        });
-
-        var tbody = document.getElementById('leaderboard-body');
-        tbody.innerHTML = '';
-
-        if(data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="color:#88a0b5;">等待特工小队完成任务提交数据...</td></tr>';
-            return;
-        }
-
-        data.forEach(function(item, index) {
-            var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
-            tbody.innerHTML += `
-                <tr>
-                    <td>${rankIcon}</td>
-                    <td><span class="badge">${item.group}</span></td>
-                    <td>${item.team}</td>
-                    <td style="color:#ffd700; font-weight:bold;">${item.score} 分</td>
-                    <td style="font-family:monospace;">${item.time_used}</td>
+                    <th>阶段一用时</th>
+                    <th>阶段二用时</th>
+                    <th>罚时状态</th>
+                    <th>总用时</th>
                 </tr>
             `;
-        });
+
+            var data = JSON.parse(localStorage.getItem('camp_leaderboard_' + currentRoundId) || '[]');
+            data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
+
+            tbody.innerHTML = '';
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="color:#88a0b5;">等待小队提交最终成绩...</td></tr>';
+                return;
+            }
+
+            data.forEach((item, index) => {
+                var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
+                var penStatus = item.hasPenalty ? '<span class="penalty-tag-yes">⚠️ 含30s罚时</span>' : '<span class="penalty-tag-no">✅ 正常</span>';
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${rankIcon}</td>
+                        <td><span class="badge">${item.group}</span></td>
+                        <td>${item.team}</td>
+                        <td style="color:#ffd700; font-weight:bold;">${item.score} 分</td>
+                        <td style="font-family:monospace; color:#a0b0c0;">${item.time_stage1 || '-'}</td>
+                        <td style="font-family:monospace; color:#a0b0c0;">${item.time_stage2 || '-'}</td>
+                        <td>${penStatus}</td>
+                        <td style="font-family:monospace; color:#00ffcc; font-weight:bold;">${item.time_used}</td>
+                    </tr>
+                `;
+            });
+        }
     }
 
-    // 1. 导出 PDF 功能 (调用原生打印弹窗，另存为 PDF)
-    function exportToPDF() {
-        var data = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
-        if (data.length === 0) {
-            alert("目前暂无比赛成绩，无需导出！");
-            return;
-        }
-        window.print();
-    }
+    // 颁奖盛典控制 (同步展示罚时)
+    function openCeremonyModal() {
+        document.getElementById('podium-round-num').innerText = currentRoundId;
+        var data = JSON.parse(localStorage.getItem('camp_leaderboard_' + currentRoundId) || '[]');
+        data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
-    // 2. 清除成绩功能 (带安全询问弹窗)
-    function clearLeaderboard() {
-        var data = JSON.parse(localStorage.getItem('camp_leaderboard') || '[]');
-        if (data.length === 0) {
-            alert("榜单目前已经是空的！");
-            return;
-        }
+        for (var i = 1; i <= 3; i++) {
+            var item = data[i - 1];
+            var nameEl = document.getElementById('name-rank-' + i);
+            var groupEl = document.getElementById('group-rank-' + i);
+            var scoreEl = document.getElementById('score-rank-' + i);
 
-        // 第一重确认
-        var confirm1 = confirm("⚠️ 警告：您确定要清除所有小队的成绩记录吗？");
-        if (confirm1) {
-            // 第二重确认：确保已保存/导出
-            var confirm2 = confirm("🚨 请再次确认：您是否已经【导出/保存】了当前的成绩单？\n\n点击【确定】将永久删除本次营会的所有成绩！");
-            if (confirm2) {
-                localStorage.removeItem('camp_leaderboard');
-                updateLeaderboard();
-                alert("成绩记录已成功清空，可以开始新一轮的营会挑战！");
+            if (item) {
+                nameEl.innerText = item.team;
+                groupEl.innerText = item.group;
+                var penExtra = item.hasPenalty ? ' <span style="color:#ff4a4a; font-size:10px;">(含30s罚时)</span>' : '';
+                scoreEl.innerHTML = item.score + " 分 (" + item.time_used + ")" + penExtra;
+            } else {
+                nameEl.innerText = "虚位以待";
+                groupEl.innerText = "-";
+                scoreEl.innerText = "-";
             }
         }
+
+        document.getElementById('ceremony-modal').style.display = 'flex';
+        triggerCelebrationEffects();
     }
 
-    // 初始更新并每 3 秒自动刷新现场排行榜
-    updateLeaderboard();
-    setInterval(updateLeaderboard, 3000);
+    function closeCeremonyModal() {
+        document.getElementById('ceremony-modal').style.display = 'none';
+        stopConfetti();
+    }
+
+    function triggerCelebrationEffects() {
+        startConfetti();
+        playVictorySound();
+    }
+
+    function playVictorySound() {
+        try {
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            var ctx = new AudioContext();
+
+            var notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+            notes.forEach((freq, index) => {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.2, ctx.currentTime + index * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * 0.1 + 0.6);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(ctx.currentTime + index * 0.1);
+                osc.stop(ctx.currentTime + index * 0.1 + 0.6);
+            });
+        } catch(e) { console.log(e); }
+    }
+
+    var confettiAnimationId = null;
+    var confettiParticles = [];
+
+    function startConfetti() {
+        var canvas = document.getElementById('confetti-canvas');
+        var ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        confettiParticles = [];
+        var colors = ['#ffd700', '#00ffcc', '#ff4a4a', '#ff99cc', '#3399ff', '#ffffff'];
+
+        for (var i = 0; i < 150; i++) {
+            confettiParticles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                size: Math.random() * 8 + 4,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                speedY: Math.random() * 3 + 2,
+                speedX: Math.random() * 2 - 1,
+                rotation: Math.random() * 360,
+                rotSpeed: Math.random() * 10 - 5
+            });
+        }
+
+        if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+
+        function renderConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            confettiParticles.forEach(p => {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.rotation += p.rotSpeed;
+
+                if (p.y > canvas.height) p.y = -10;
+
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                ctx.restore();
+            });
+            confettiAnimationId = requestAnimationFrame(renderConfetti);
+        }
+        renderConfetti();
+    }
+
+    function stopConfetti() {
+        if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+        var canvas = document.getElementById('confetti-canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function exportPDF() { window.print(); }
+
+    function clearCurrentRoundData() {
+        if (confirm(`⚠️ 确定要清空第 ${currentRoundId} 轮的所有成绩与登记数据吗？`)) {
+            localStorage.removeItem('camp_leaderboard_' + currentRoundId);
+            localStorage.removeItem('camp_stage1_results_' + currentRoundId);
+            localStorage.removeItem('camp_registered_teams_' + currentRoundId);
+            localStorage.removeItem('camp_room_state_' + currentRoundId);
+            syncUI();
+        }
+    }
+
+    window.addEventListener('storage', syncUI);
+
+    initRounds();
+    setInterval(syncUI, 2000);
 </script>
 </body>
 </html>
