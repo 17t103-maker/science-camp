@@ -712,7 +712,7 @@
         stage2.scrollIntoView({ behavior: 'smooth' });
     }
 
-    // 阶段二逻辑
+    // 阶段二逻辑（已移除下拉选项中的颜色提示）
     function renderStage2Cards() {
         var container = document.getElementById('sample-grid-container');
         container.innerHTML = '';
@@ -722,11 +722,11 @@
                     <div class="sample-title">未知溶液 ${key}</div>
                     <select class="sample-select" id="select-${key}" disabled>
                         <option value="">-- 选择酸碱性 --</option>
-                        <option value="强酸性">强酸性 (红色)</option>
-                        <option value="弱酸性">弱酸性 (粉红/紫红)</option>
-                        <option value="中性">中性 (紫色)</option>
-                        <option value="弱碱性">弱碱性 (蓝色/绿)</option>
-                        <option value="强碱性">强碱性 (黄色)</option>
+                        <option value="强酸性">强酸性</option>
+                        <option value="弱酸性">弱酸性</option>
+                        <option value="中性">中性</option>
+                        <option value="弱碱性">弱碱性</option>
+                        <option value="强碱性">强碱性</option>
                     </select>
                     <button class="btn-verify-single" id="btn-verify-${key}" onclick="verifySingle('${key}')" disabled>验证答案</button>
                     <div class="sample-status" id="status-${key}">尝试次数: 0/2</div>
