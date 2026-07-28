@@ -214,6 +214,10 @@
         .mini-leaderboard td { padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .my-team-row { background: rgba(0,255,204,0.15); font-weight: bold; color: #00ffcc; }
         .penalty-tag { color: #ff4a4a; font-size: 10px; font-weight: bold; }
+        
+        .answer-tag { display: inline-block; padding: 2px 4px; border-radius: 3px; font-size: 10px; margin: 1px; }
+        .answer-correct { background: rgba(0,255,204,0.2); color: #00ffcc; border: 1px solid #00ffcc; }
+        .answer-wrong { background: rgba(255,74,74,0.2); color: #ff4a4a; border: 1px solid #ff4a4a; }
     </style>
 </head>
 <body>
@@ -388,6 +392,7 @@
                     <th>组别</th>
                     <th>小队名称</th>
                     <th>得分</th>
+                    <th>答题明细</th>
                     <th>总用时</th>
                 </tr>
             </thead>
@@ -432,11 +437,15 @@
         10: { hex: '#66ff66', desc: '翠绿色 (碱性)' }, 11: { hex: '#ccff33', desc: '黄绿色 (强碱性)' }
     };
 
+    // 默认参考答案（当老师未设定时使用）
     var stage2Answers = { 'A': '强酸性', 'B': '弱酸性', 'C': '中性', 'D': '弱碱性', 'E': '强碱性' };
+    
     var sampleState = {
-        'A': { attempts: 0, score: 0, solved: false }, 'B': { attempts: 0, score: 0, solved: false },
-        'C': { attempts: 0, score: 0, solved: false }, 'D': { attempts: 0, score: 0, solved: false },
-        'E': { attempts: 0, score: 0, solved: false }
+        'A': { attempts: 0, score: 0, solved: false, userChoice: '' },
+        'B': { attempts: 0, score: 0, solved: false, userChoice: '' },
+        'C': { attempts: 0, score: 0, solved: false, userChoice: '' },
+        'D': { attempts: 0, score: 0, solved: false, userChoice: '' },
+        'E': { attempts: 0, score: 0, solved: false, userChoice: '' }
     };
 
     function fmtTime(sec) {
@@ -454,10 +463,16 @@
 
     // 登记并校验云端 PIN 码
     function registerTeam() {
-        // 先从云端拉取当前轮次与 PIN 码
         db.ref('current_round_id').once('value', (snap) => {
             currentRoundId = snap.val() || '1';
             
+            // 实时同步本轮老师设定的答案
+            db.ref(`rounds/${currentRoundId}/answers`).once('value', (ansSnap) => {
+                if (ansSnap.exists()) {
+                    stage2Answers = ansSnap.val();
+                }
+            });
+
             db.ref(`rounds/${currentRoundId}/pin`).once('value', (pinSnap) => {
                 var correctPin = pinSnap.val() || '5829';
                 var userPin = document.getElementById('pin-code-input').value.trim();
@@ -494,6 +509,13 @@
     function listenGlobalSignal() {
         if (!teamName) return;
 
+        // 监听老师设置答案变动
+        db.ref(`rounds/${currentRoundId}/answers`).on('value', (ansSnap) => {
+            if (ansSnap.exists()) {
+                stage2Answers = ansSnap.val();
+            }
+        });
+
         // 1. 监听游戏房间状态变化
         db.ref(`rounds/${currentRoundId}/room_state`).on('value', (snapshot) => {
             var roomState = snapshot.val() || {};
@@ -513,7 +535,7 @@
             }
         });
 
-        // 2. 实时监听全班成绩榜单（用于弹窗榜单展示）
+        // 2. 实时监听全班成绩榜单
         db.ref(`rounds/${currentRoundId}/stage1_results`).on('value', (snap) => {
             if (isStage1Finished) renderStage1Leaderboard(snap.val() || {});
         });
@@ -671,7 +693,6 @@
         document.getElementById('win-overlay').style.display = 'flex';
     }
 
-    // 上传阶段一数据到 Firebase
     function submitStage1Result() {
         var payload = {
             group: groupName,
@@ -774,6 +795,7 @@
         if (!userVal) { alert("请先选择该溶液的酸碱性！"); return; }
 
         state.attempts++;
+        state.userChoice = userVal; // 记录最终选择
 
         if (userVal === stage2Answers[key]) {
             state.solved = true;
@@ -819,10 +841,21 @@
         document.getElementById('final-time-total').innerText = fmtTime(totalSec);
         document.getElementById('penalty-text-display').innerHTML = hasPenalty ? ' | <b class="penalty-tag">含30s超时罚时</b>' : '';
 
+        // 构造详细作答记录
+        var detailsPayload = {};
+        ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+            detailsPayload[k] = {
+                choice: sampleState[k].userChoice,
+                attempts: sampleState[k].attempts,
+                score: sampleState[k].score
+            };
+        });
+
         var payload = {
             group: groupName,
             team: teamName,
             score: totalScore,
+            details: detailsPayload,
             time_stage1: fmtTime(stage1Seconds),
             time_stage2: fmtTime(finalStage2Sec) + (hasPenalty ? " (+30s)" : ""),
             time_used: fmtTime(totalSec),
@@ -831,7 +864,7 @@
             timestamp: new Date().toISOString()
         };
 
-        // 🌟 上传最终成绩到云端总榜
+        // 上传最终成绩与明细到云端总榜
         db.ref(`rounds/${currentRoundId}/leaderboard/${groupName}`).set(payload);
 
         document.getElementById('final-win-overlay').style.display = 'flex';
@@ -849,12 +882,28 @@
             var rowClass = isMyTeam ? 'class="my-team-row"' : '';
             var rank = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
             
+            // 格式化展示个人/全班答题明细
+            var detailsHtml = '';
+            if (item.details) {
+                ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+                    var d = item.details[k];
+                    if (d) {
+                        var isCorrect = d.score > 0;
+                        var css = isCorrect ? 'answer-correct' : 'answer-wrong';
+                        detailsHtml += `<span class="answer-tag ${css}">${k}:${d.choice || '未答'}(${d.score}分)</span>`;
+                    }
+                });
+            } else {
+                detailsHtml = '<span style="color:#888;">无明细</span>';
+            }
+
             tbody.innerHTML += `
                 <tr ${rowClass}>
                     <td>${rank}</td>
                     <td>${item.group}</td>
                     <td>${item.team} ${isMyTeam ? '(我方)' : ''}</td>
                     <td><b>${item.score}</b> 分</td>
+                    <td>${detailsHtml}</td>
                     <td style="font-family:monospace;">${item.time_used}</td>
                 </tr>
             `;
