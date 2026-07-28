@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小六才艺营 - 花青素特工训练营系统</title>
+    <title>小六才艺营 - 花青素特工训练营系统 (学生端)</title>
+    <!-- 引入 Firebase SDK (v8 传统脚本版本) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
             --bg-dark: #0a1118;
@@ -130,7 +133,6 @@
         .stage2-container { margin-top: 20px; border-color: rgba(255, 215, 0, 0.3); display: none; }
         .stage2-container.unlocked { display: block; }
         
-        /* 💡 阶段二超大号计时器样式 */
         .stage2-big-timer-card {
             background: rgba(0, 0, 0, 0.4);
             border: 2px solid var(--accent-gold);
@@ -179,7 +181,6 @@
             color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 14px;
         }
 
-        /* 实验室座位表 CSS (置中白板) */
         .lab-layout-container {
             background: rgba(0, 0, 0, 0.25); border: 1px dashed rgba(0, 255, 204, 0.3);
             border-radius: 8px; padding: 12px; margin-bottom: 15px; box-sizing: border-box;
@@ -190,17 +191,13 @@
             letter-spacing: 4px; box-shadow: 0 2px 8px rgba(255,255,255,0.2);
             text-align: center; width: 100%; box-sizing: border-box;
         }
-        .seats-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;
-        }
+        .seats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
         .seat-btn {
             background: rgba(13, 27, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.2);
             color: #fff; padding: 10px 4px; border-radius: 6px; font-weight: bold; font-size: 14px;
             cursor: pointer; transition: all 0.2s ease; display: flex; justify-content: center; align-items: center;
         }
-        .seat-btn:hover {
-            border-color: var(--primary); color: var(--primary); background: rgba(0, 255, 204, 0.1);
-        }
+        .seat-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(0, 255, 204, 0.1); }
         .seat-btn.selected {
             background: var(--primary); color: #0a1118; border-color: var(--primary);
             box-shadow: 0 0 12px var(--primary); font-size: 15px;
@@ -227,35 +224,24 @@
         <h2 style="margin-top:0;">🏷️ 特工小组身份登记</h2>
         <p style="font-size:12px; color:#a0b0c0; margin-bottom:12px;">请输入大屏幕上的 PIN 码，点击对应实验台位置并输入小队名！</p>
         
-        <!-- PIN 码输入框 -->
         <div class="form-group">
             <label style="color:#ffd700; font-weight:bold;">🔑 请输入 PIN 码 (看大屏幕)：</label>
             <input type="text" class="form-control" id="pin-code-input" maxlength="4" placeholder="例如：5829" style="letter-spacing: 4px; font-size: 16px; font-weight: bold; text-align: center; color: #ffd700; border-color: #ffd700;">
         </div>
 
-        <!-- 实验室图形化座位图选择 -->
         <div class="form-group">
             <label style="color:#00ffcc; font-weight:bold;">📍 请点击您的实验室桌位：</label>
             <div class="lab-layout-container">
                 <div class="whiteboard-banner">白板</div>
                 <div class="seats-grid">
-                    <!-- Row 1 -->
                     <div class="seat-btn" onclick="selectGroupSeat('第2组', this)">第 2 组</div>
                     <div class="seat-btn" onclick="selectGroupSeat('第1组', this)">第 1 组</div>
-
-                    <!-- Row 2 -->
                     <div class="seat-btn" onclick="selectGroupSeat('第4组', this)">第 4 组</div>
                     <div class="seat-btn" onclick="selectGroupSeat('第3组', this)">第 3 组</div>
-
-                    <!-- Row 3 -->
                     <div class="seat-btn" onclick="selectGroupSeat('第6组', this)">第 6 组</div>
                     <div class="seat-btn" onclick="selectGroupSeat('第5组', this)">第 5 组</div>
-
-                    <!-- Row 4 -->
                     <div class="seat-btn" onclick="selectGroupSeat('第8组', this)">第 8 组</div>
                     <div class="seat-btn" onclick="selectGroupSeat('第7组', this)">第 7 组</div>
-
-                    <!-- Row 5 -->
                     <div class="seat-btn" onclick="selectGroupSeat('第10组', this)">第 10 组</div>
                     <div class="seat-btn" onclick="selectGroupSeat('第9组', this)">第 9 组</div>
                 </div>
@@ -282,7 +268,7 @@
     </div>
 </div>
 
-<!-- 顶部状态栏 (加强计时显示) -->
+<!-- 顶部状态栏 -->
 <div class="container" style="padding:10px 20px; display:none;" id="status-bar-container">
     <div class="team-bar" style="margin:0;">
         <div>当前小队：<b id="display-team-info" style="color:#fff;">-</b></div>
@@ -340,7 +326,6 @@
         <b>🔍 实战计分规则：</b>对照色谱线观察实物试剂变色。每个溶液<b>首次答对得2分</b>，<b>错1次后答对得1分</b>，<b>错2次后该题得0分锁定</b>！
     </div>
 
-    <!-- 💡 新增阶段二超大号醒目计时框 -->
     <div class="stage2-big-timer-card">
         <span class="stage2-timer-title">⏱️ 阶段二实战用时：</span>
         <span class="stage2-timer-clock" id="stage2-big-clock">00:00</span>
@@ -412,6 +397,19 @@
 </div>
 
 <script>
+    // 🔑 初始化 Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDxN0g2848g3oUeB33IBkaHNOFxpMJqICo",
+        authDomain: "science-camp-52b23.firebaseapp.com",
+        databaseURL: "https://science-camp-52b23-default-rtdb.firebaseio.com",
+        projectId: "science-camp-52b23",
+        storageBucket: "science-camp-52b23.firebasestorage.app",
+        messagingSenderId: "1083831118018",
+        appId: "1:1083831118018:web:8a5c5f5b55af703da6f35b"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     var selectedGroup = "";
     var groupName = "", teamName = "";
     var currentRoundId = '1';
@@ -447,7 +445,6 @@
         return m + ":" + s;
     }
 
-    // 选择座位组别
     function selectGroupSeat(groupStr, btnEl) {
         selectedGroup = groupStr;
         var allButtons = document.querySelectorAll('.seat-btn');
@@ -455,65 +452,75 @@
         btnEl.classList.add('selected');
     }
 
-    // 登记并校验 PIN 码
+    // 登记并校验云端 PIN 码
     function registerTeam() {
-        currentRoundId = localStorage.getItem('camp_current_round_id') || '1';
-        var correctPin = localStorage.getItem('camp_pin_' + currentRoundId) || '';
-        var userPin = document.getElementById('pin-code-input').value.trim();
+        // 先从云端拉取当前轮次与 PIN 码
+        db.ref('current_round_id').once('value', (snap) => {
+            currentRoundId = snap.val() || '1';
+            
+            db.ref(`rounds/${currentRoundId}/pin`).once('value', (pinSnap) => {
+                var correctPin = pinSnap.val() || '5829';
+                var userPin = document.getElementById('pin-code-input').value.trim();
 
-        if (!userPin) { alert("请输入现场大屏幕显示的 PIN 码！"); return; }
-        if (userPin !== correctPin) { alert("❌ PIN 码错误！请输入现场大屏幕显示的 4 位数字 PIN 码。"); return; }
+                if (!userPin) { alert("请输入现场大屏幕显示的 PIN 码！"); return; }
+                if (userPin !== correctPin) { alert("❌ PIN 码错误！请输入现场大屏幕显示的 4 位数字 PIN 码。"); return; }
+                if (!selectedGroup) { alert("请点击图中的实验室桌位（如：第 1 组）！"); return; }
 
-        if (!selectedGroup) { alert("请点击图中的实验室桌位（如：第 1 组）！"); return; }
+                var tInput = document.getElementById('team-name-input');
+                var tName = tInput.value.trim();
+                if(!tName) { alert("请输入小队名称！"); return; }
+                if(tName.length > 10) { alert("小队名称不能超过10个字符！"); return; }
+                
+                groupName = selectedGroup;
+                teamName = tName;
 
-        var tInput = document.getElementById('team-name-input');
-        var tName = tInput.value.trim();
-        if(!tName) { alert("请输入小队名称！"); return; }
-        if(tName.length > 10) { alert("小队名称不能超过10个字符！"); return; }
-        
-        groupName = selectedGroup;
-        teamName = tName;
+                document.getElementById('register-modal').style.display = 'none';
+                document.getElementById('waiting-modal').style.display = 'flex';
+                document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
+                document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
 
-        document.getElementById('register-modal').style.display = 'none';
-        document.getElementById('waiting-modal').style.display = 'flex';
-        document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
-        document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
+                // 同步数据到云端
+                db.ref(`rounds/${currentRoundId}/registered_teams/${groupName}`).set({
+                    group: groupName, team: teamName, regTime: new Date().toLocaleTimeString()
+                });
 
-        var regs = JSON.parse(localStorage.getItem('camp_registered_teams_' + currentRoundId) || '[]');
-        var exists = regs.some(r => r.group === groupName && r.team === teamName);
-        if(!exists) {
-            regs.push({ group: groupName, team: teamName, regTime: new Date().toLocaleTimeString() });
-            localStorage.setItem('camp_registered_teams_' + currentRoundId, JSON.stringify(regs));
-        }
-
-        renderStage2Cards();
-        checkGlobalSignal();
+                renderStage2Cards();
+                listenGlobalSignal();
+            });
+        });
     }
 
-    window.addEventListener('storage', checkGlobalSignal);
-
-    function checkGlobalSignal() {
+    // Firebase 实时监听广播信号
+    function listenGlobalSignal() {
         if (!teamName) return;
 
-        currentRoundId = localStorage.getItem('camp_current_round_id') || '1';
-        var roomState = JSON.parse(localStorage.getItem('camp_room_state_' + currentRoundId) || '{}');
+        // 1. 监听游戏房间状态变化
+        db.ref(`rounds/${currentRoundId}/room_state`).on('value', (snapshot) => {
+            var roomState = snapshot.val() || {};
 
-        if (roomState.status === 'ended') {
-            alert('📢 老师已宣布本轮比赛结束！');
-            disableAllControls();
-            return;
-        }
+            if (roomState.status === 'ended') {
+                alert('📢 老师已宣布本轮比赛结束！');
+                disableAllControls();
+                return;
+            }
 
-        if (roomState.stage1_started && !isStage1Started) {
-            unlockStage1(roomState.stage1_time);
-        }
+            if (roomState.stage1_started && !isStage1Started) {
+                unlockStage1(roomState.stage1_time);
+            }
 
-        if (roomState.stage2_started && !isStage2Started) {
-            unlockStage2Controls(roomState.stage2_time);
-        }
+            if (roomState.stage2_started && !isStage2Started) {
+                unlockStage2Controls(roomState.stage2_time);
+            }
+        });
 
-        if (isStage1Finished) renderStage1Leaderboard();
-        if (completedCount === 5) renderStudentLeaderboard();
+        // 2. 实时监听全班成绩榜单（用于弹窗榜单展示）
+        db.ref(`rounds/${currentRoundId}/stage1_results`).on('value', (snap) => {
+            if (isStage1Finished) renderStage1Leaderboard(snap.val() || {});
+        });
+
+        db.ref(`rounds/${currentRoundId}/leaderboard`).on('value', (snap) => {
+            if (completedCount === 5) renderStudentLeaderboard(snap.val() || {});
+        });
     }
 
     function unlockStage1(startTimeStr) {
@@ -611,11 +618,9 @@
             document.getElementById('btn-alkali').disabled = true;
             document.getElementById('btn-capture').disabled = true;
 
-            // 超时判定 (>60s)
             hasPenalty = stage1Seconds > 60;
             submitStage1Result();
 
-            // 设置提醒弹窗样式与内容
             var alertBox = document.getElementById('penalty-alert-box');
             var alertTitle = document.getElementById('penalty-alert-title');
             var alertContent = document.getElementById('penalty-alert-content');
@@ -650,7 +655,6 @@
 
     function closePenaltyAlertModal() {
         document.getElementById('penalty-alert-modal').style.display = 'none';
-        
         var noticeBox = document.getElementById('penalty-notice-box');
         if (hasPenalty) {
             noticeBox.style.background = "rgba(255,74,74,0.2)";
@@ -664,13 +668,11 @@
             noticeBox.innerHTML = `✅ <b>合格：</b>阶段一用时 <b>${fmtTime(stage1Seconds)}</b>，无追加罚时！`;
         }
 
-        renderStage1Leaderboard();
         document.getElementById('win-overlay').style.display = 'flex';
     }
 
+    // 上传阶段一数据到 Firebase
     function submitStage1Result() {
-        var key = 'camp_stage1_results_' + currentRoundId;
-        var list = JSON.parse(localStorage.getItem(key) || '[]');
         var payload = {
             group: groupName,
             team: teamName,
@@ -678,15 +680,11 @@
             s1_seconds: stage1Seconds,
             hasPenalty: hasPenalty
         };
-        var idx = list.findIndex(l => l.group === groupName && l.team === teamName);
-        if (idx >= 0) list[idx] = payload;
-        else list.push(payload);
-        localStorage.setItem(key, JSON.stringify(list));
+        db.ref(`rounds/${currentRoundId}/stage1_results/${groupName}`).set(payload);
     }
 
-    function renderStage1Leaderboard() {
-        var key = 'camp_stage1_results_' + currentRoundId;
-        var list = JSON.parse(localStorage.getItem(key) || '[]');
+    function renderStage1Leaderboard(dataObj) {
+        var list = Object.values(dataObj || {});
         list.sort((a,b) => a.s1_seconds - b.s1_seconds);
 
         var tbody = document.getElementById('stage1-leaderboard-body');
@@ -759,7 +757,6 @@
             var displaySec = stage2Seconds + (hasPenalty ? 30 : 0);
             var timeStr = fmtTime(displaySec) + (hasPenalty ? " (+30s)" : "");
             
-            // 实时同步顶部小字与阶段二板块内的超大号动态钟表
             document.getElementById('timer-stage2-display').innerText = timeStr;
             document.getElementById('stage2-big-clock').innerText = timeStr;
         }, 1000);
@@ -834,22 +831,14 @@
             timestamp: new Date().toISOString()
         };
 
-        var key = 'camp_leaderboard_' + currentRoundId;
-        var history = JSON.parse(localStorage.getItem(key) || '[]');
-        var idx = history.findIndex(h => h.group === groupName && h.team === teamName);
-        if (idx >= 0) history[idx] = payload;
-        else history.push(payload);
-        
-        localStorage.setItem(key, JSON.stringify(history));
+        // 🌟 上传最终成绩到云端总榜
+        db.ref(`rounds/${currentRoundId}/leaderboard/${groupName}`).set(payload);
 
-        renderStudentLeaderboard();
         document.getElementById('final-win-overlay').style.display = 'flex';
     }
 
-    function renderStudentLeaderboard() {
-        var key = 'camp_leaderboard_' + currentRoundId;
-        var data = JSON.parse(localStorage.getItem(key) || '[]');
-
+    function renderStudentLeaderboard(dataObj) {
+        var data = Object.values(dataObj || {});
         data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
         var tbody = document.getElementById('student-leaderboard-body');
