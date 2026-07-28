@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>小六才艺营 - 科学站实时风云榜 (老师控制台)</title>
+    <!-- 引入 Firebase SDK (v8 传统脚本版本) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         body {
             background-color: #0a1118; color: #fff;
@@ -26,7 +29,6 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.8); position: relative;
         }
 
-        /* PIN 码卡片展示 */
         .pin-display-card {
             background: rgba(255, 215, 0, 0.1); border: 2px solid #ffd700; border-radius: 10px;
             padding: 12px 20px; margin-bottom: 15px; display: inline-flex; align-items: center; gap: 15px;
@@ -77,11 +79,9 @@
         .btn-export { background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #aaa; }
         .btn-ctrl:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
         
-        /* 罚时标签 */
         .penalty-tag-yes { background: rgba(255, 74, 74, 0.2); border: 1px solid #ff4a4a; color: #ff4a4a; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
         .penalty-tag-no { color: #00ffcc; font-size: 11px; }
 
-        /* 领奖台样式 */
         .overlay {
             display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10, 17, 24, 0.95); z-index: 2000; justify-content: center; align-items: center;
@@ -141,19 +141,16 @@
 </head>
 <body>
 
-    <!-- 撒花 Canvas -->
     <canvas id="confetti-canvas"></canvas>
 
     <h1>🏆 小六才艺营 - 科学站实时风云榜</h1>
     
-    <!-- 比赛轮次选择栏 -->
     <div class="round-selector-bar">
         <span><b>比赛轮次：</b></span>
         <div id="round-buttons-list" style="display:inline-flex; gap:6px; flex-wrap:wrap;"></div>
         <button class="btn-new-round" onclick="addNewRound()">➕ 开启新一轮比赛</button>
     </div>
 
-    <!-- 现场 PIN 码展示卡片 -->
     <div class="pin-display-card">
         <span style="font-size:15px; color:#fff; font-weight:bold;">🔑 第 <span id="pin-round-num">1</span> 轮 现场 PIN 码：</span>
         <span class="pin-number" id="current-pin-display">----</span>
@@ -161,25 +158,20 @@
     </div>
 
     <div class="board-container">
-        <!-- 控制台 -->
         <div class="control-panel-box">
-            <div>
-                状态：<b id="status-text" style="color:#ffd700;">等待开始</b>
-            </div>
+            <div>状态：<b id="status-text" style="color:#ffd700;">等待开始</b></div>
             <button class="btn-ctrl btn-stage1" id="btn-start-s1" onclick="startStage1()">🚀 启动阶段一 (开始比赛)</button>
             <button class="btn-ctrl btn-stage2" id="btn-start-s2" onclick="startStage2()" disabled>🧪 启动阶段二统一答题</button>
             <button class="btn-ctrl btn-end" id="btn-end-round" onclick="endCurrentRound()">🏁 结束本轮比赛</button>
             <button class="btn-ctrl btn-ceremony" id="btn-ceremony" onclick="openCeremonyModal()">🏆 颁奖盛典 (成绩检视)</button>
         </div>
 
-        <!-- 已登记的小队卡片展示 -->
         <div class="registered-box">
             <span style="font-size:12px; color:#a0b0c0;">📌 本轮已登记小队 (<span id="reg-count">0</span>)：</span>
             <div id="registered-teams-list" style="margin-top:5px;"></div>
         </div>
 
-        <!-- 动态表格 -->
-        <h3 id="table-title" style="color:var(--primary); font-size:16px; text-align:left; margin:15px 0 5px 0;">📊 实时榜单：</h3>
+        <h3 id="table-title" style="color:#00ffcc; font-size:16px; text-align:left; margin:15px 0 5px 0;">📊 实时榜单：</h3>
         <table>
             <thead id="leaderboard-head"></thead>
             <tbody id="leaderboard-body"></tbody>
@@ -191,14 +183,14 @@
         </div>
     </div>
 
-    <!-- 颁奖盛典领奖台弹窗 -->
+    <!-- 颁奖盛典弹窗 -->
     <div class="overlay" id="ceremony-modal" style="display:none;">
         <div class="podium-modal">
             <h2 style="color:#ffd700; font-size:28px; margin:0; text-shadow:0 0 15px rgba(255,215,0,0.6);">🎉 第 <span id="podium-round-num">1</span> 轮 · 荣耀颁奖台 🎉</h2>
             <p style="color:#a0b0c0; font-size:13px; margin-top:5px;">热烈祝贺本轮表现最出色的特工小队！</p>
 
             <div class="podium-stage">
-                <!-- 亚军 (第 2 名) -->
+                <!-- 亚军 -->
                 <div class="podium-step step-2">
                     <div class="podium-card" id="card-rank-2">
                         <div class="podium-crown">🥈</div>
@@ -209,7 +201,7 @@
                     <div class="podium-rank-num">2</div>
                 </div>
 
-                <!-- 冠军 (第 1 名) -->
+                <!-- 冠军 -->
                 <div class="podium-step step-1">
                     <div class="podium-card" id="card-rank-1" style="border-color:#ffd700; box-shadow:0 0 15px rgba(255,215,0,0.3);">
                         <div class="podium-crown">🥇</div>
@@ -220,7 +212,7 @@
                     <div class="podium-rank-num" style="color:rgba(255,215,0,0.4);">1</div>
                 </div>
 
-                <!-- 季军 (第 3 名) -->
+                <!-- 季军 -->
                 <div class="podium-step step-3">
                     <div class="podium-card" id="card-rank-3">
                         <div class="podium-crown">🥉</div>
@@ -240,31 +232,49 @@
     </div>
 
 <script>
+    // 🔑 初始化 Firebase
+    const firebaseConfig = {
+        apiKey: "AIzaSyDxN0g2848g3oUeB33IBkaHNOFxpMJqICo",
+        authDomain: "science-camp-52b23.firebaseapp.com",
+        databaseURL: "https://science-camp-52b23-default-rtdb.firebaseio.com",
+        projectId: "science-camp-52b23",
+        storageBucket: "science-camp-52b23.firebasestorage.app",
+        messagingSenderId: "1083831118018",
+        appId: "1:1083831118018:web:8a5c5f5b55af703da6f35b"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     var currentRoundId = '1';
 
     function initRounds() {
-        var rounds = JSON.parse(localStorage.getItem('camp_rounds_list') || '["1"]');
-        currentRoundId = localStorage.getItem('camp_current_round_id') || rounds[rounds.length - 1];
-        
-        ensurePinExists(currentRoundId);
-        renderRoundButtons(rounds);
-        syncUI();
+        // 从云端拉取轮次列表
+        db.ref('rounds_list').on('value', (snap) => {
+            var rounds = snap.val() || ["1"];
+            db.ref('current_round_id').once('value', (curSnap) => {
+                currentRoundId = curSnap.val() || rounds[rounds.length - 1];
+                ensurePinExists(currentRoundId);
+                renderRoundButtons(rounds);
+                listenCurrentRoundData();
+            });
+        });
     }
 
     function ensurePinExists(rId) {
-        var pin = localStorage.getItem('camp_pin_' + rId);
-        if (!pin) {
-            pin = String(Math.floor(1000 + Math.random() * 9000));
-            localStorage.setItem('camp_pin_' + rId, pin);
-        }
-        document.getElementById('pin-round-num').innerText = rId;
-        document.getElementById('current-pin-display').innerText = pin;
+        db.ref(`rounds/${rId}/pin`).once('value', (snap) => {
+            var pin = snap.val();
+            if (!pin) {
+                pin = String(Math.floor(1000 + Math.random() * 9000));
+                db.ref(`rounds/${rId}/pin`).set(pin);
+            }
+            document.getElementById('pin-round-num').innerText = rId;
+            document.getElementById('current-pin-display').innerText = pin;
+        });
     }
 
     function generateNewPin() {
         var pin = String(Math.floor(1000 + Math.random() * 9000));
-        localStorage.setItem('camp_pin_' + currentRoundId, pin);
-        document.getElementById('current-pin-display').innerText = pin;
+        db.ref(`rounds/${currentRoundId}/pin`).set(pin);
         alert(`🔑 已为第 ${currentRoundId} 轮生成新 PIN 码：${pin}`);
     }
 
@@ -279,98 +289,92 @@
 
     function switchRound(rId) {
         currentRoundId = rId;
-        localStorage.setItem('camp_current_round_id', rId);
-        var rounds = JSON.parse(localStorage.getItem('camp_rounds_list') || '["1"]');
+        db.ref('current_round_id').set(rId);
         ensurePinExists(rId);
-        renderRoundButtons(rounds);
-        syncUI();
+        listenCurrentRoundData();
     }
 
     function addNewRound() {
-        var rounds = JSON.parse(localStorage.getItem('camp_rounds_list') || '["1"]');
-        var newId = String(parseInt(rounds[rounds.length - 1] || '0') + 1);
-        rounds.push(newId);
-        localStorage.setItem('camp_rounds_list', JSON.stringify(rounds));
-        switchRound(newId);
-    }
-
-    function getRoomState() {
-        return JSON.parse(localStorage.getItem('camp_room_state_' + currentRoundId) || '{"status":"waiting"}');
-    }
-
-    function saveRoomState(state) {
-        localStorage.setItem('camp_room_state_' + currentRoundId, JSON.stringify(state));
-        syncUI();
+        db.ref('rounds_list').once('value', (snap) => {
+            var rounds = snap.val() || ["1"];
+            var newId = String(parseInt(rounds[rounds.length - 1] || '0') + 1);
+            rounds.push(newId);
+            db.ref('rounds_list').set(rounds);
+            switchRound(newId);
+        });
     }
 
     function startStage1() {
         if (confirm("📢 是否确认立即统一开启【阶段一】？")) {
-            var state = getRoomState();
-            state.status = 'stage1';
-            state.stage1_started = true;
-            state.stage1_time = new Date().toISOString();
-            saveRoomState(state);
+            var state = { status: 'stage1', stage1_started: true, stage1_time: new Date().toISOString() };
+            db.ref(`rounds/${currentRoundId}/room_state`).set(state);
         }
     }
 
     function startStage2() {
         if (confirm("📢 是否确认立即统一开启【阶段二线下实战】？")) {
-            var state = getRoomState();
-            state.status = 'stage2';
-            state.stage2_started = true;
-            state.stage2_time = new Date().toISOString();
-            saveRoomState(state);
+            db.ref(`rounds/${currentRoundId}/room_state`).update({
+                status: 'stage2', stage2_started: true, stage2_time: new Date().toISOString()
+            });
         }
     }
 
     function endCurrentRound() {
         if (confirm("⚠️ 确定要结束本轮比赛吗？结束后学生将无法再提交成绩！")) {
-            var state = getRoomState();
-            state.status = 'ended';
-            saveRoomState(state);
+            db.ref(`rounds/${currentRoundId}/room_state/status`).set('ended');
         }
     }
 
-    function syncUI() {
-        var state = getRoomState();
-        var statusTxt = document.getElementById('status-text');
-        var btnS1 = document.getElementById('btn-start-s1');
-        var btnS2 = document.getElementById('btn-start-s2');
-        var btnEnd = document.getElementById('btn-end-round');
+    // 监听实时数据变动并刷新 UI
+    function listenCurrentRoundData() {
+        // 1. PIN 码
+        db.ref(`rounds/${currentRoundId}/pin`).on('value', snap => {
+            document.getElementById('current-pin-display').innerText = snap.val() || '----';
+        });
 
-        if (state.status === 'waiting') {
-            statusTxt.innerText = `第 ${currentRoundId} 轮：等待小队登记...`;
-            statusTxt.style.color = "#ffd700";
-            btnS1.disabled = false; btnS2.disabled = true; btnEnd.disabled = false;
-        } else if (state.status === 'stage1') {
-            statusTxt.innerText = `第 ${currentRoundId} 轮：阶段一进行中...`;
-            statusTxt.style.color = "#00ffcc";
-            btnS1.disabled = true; btnS2.disabled = false; btnEnd.disabled = false;
-        } else if (state.status === 'stage2') {
-            statusTxt.innerText = `第 ${currentRoundId} 轮：阶段二实战化验中...`;
-            statusTxt.style.color = "#00ffcc";
-            btnS1.disabled = true; btnS2.disabled = true; btnEnd.disabled = false;
-        } else if (state.status === 'ended') {
-            statusTxt.innerText = `第 ${currentRoundId} 轮：比赛已宣布结束 (已锁定)`;
-            statusTxt.style.color = "#ff4a4a";
-            btnS1.disabled = true; btnS2.disabled = true; btnEnd.disabled = true;
-        }
+        // 2. 状态控制
+        db.ref(`rounds/${currentRoundId}/room_state`).on('value', snap => {
+            var state = snap.val() || { status: 'waiting' };
+            var statusTxt = document.getElementById('status-text');
+            var btnS1 = document.getElementById('btn-start-s1');
+            var btnS2 = document.getElementById('btn-start-s2');
+            var btnEnd = document.getElementById('btn-end-round');
 
-        renderRegisteredTeams();
-        updateLeaderboard(state.status);
-    }
+            if (state.status === 'waiting') {
+                statusTxt.innerText = `第 ${currentRoundId} 轮：等待小队登记...`;
+                statusTxt.style.color = "#ffd700";
+                btnS1.disabled = false; btnS2.disabled = true; btnEnd.disabled = false;
+            } else if (state.status === 'stage1') {
+                statusTxt.innerText = `第 ${currentRoundId} 轮：阶段一进行中...`;
+                statusTxt.style.color = "#00ffcc";
+                btnS1.disabled = true; btnS2.disabled = false; btnEnd.disabled = false;
+            } else if (state.status === 'stage2') {
+                statusTxt.innerText = `第 ${currentRoundId} 轮：阶段二实战化验中...`;
+                statusTxt.style.color = "#00ffcc";
+                btnS1.disabled = true; btnS2.disabled = true; btnEnd.disabled = false;
+            } else if (state.status === 'ended') {
+                statusTxt.innerText = `第 ${currentRoundId} 轮：比赛已宣布结束 (已锁定)`;
+                statusTxt.style.color = "#ff4a4a";
+                btnS1.disabled = true; btnS2.disabled = true; btnEnd.disabled = true;
+            }
 
-    function renderRegisteredTeams() {
-        var regs = JSON.parse(localStorage.getItem('camp_registered_teams_' + currentRoundId) || '[]');
-        document.getElementById('reg-count').innerText = regs.length;
-        var container = document.getElementById('registered-teams-list');
-        if (regs.length === 0) {
-            container.innerHTML = '<span style="font-size:12px; color:#666;">暂无小队登记</span>';
-            return;
-        }
-        container.innerHTML = '';
-        regs.forEach(r => {
-            container.innerHTML += `<span class="reg-tag"><b>${r.group}</b>: ${r.team}</span>`;
+            updateLeaderboard(state.status);
+        });
+
+        // 3. 已登记队伍
+        db.ref(`rounds/${currentRoundId}/registered_teams`).on('value', snap => {
+            var data = snap.val() || {};
+            var regs = Object.values(data);
+            document.getElementById('reg-count').innerText = regs.length;
+            var container = document.getElementById('registered-teams-list');
+            if (regs.length === 0) {
+                container.innerHTML = '<span style="font-size:12px; color:#666;">暂无小队登记</span>';
+                return;
+            }
+            container.innerHTML = '';
+            regs.forEach(r => {
+                container.innerHTML += `<span class="reg-tag"><b>${r.group}</b>: ${r.team}</span>`;
+            });
         });
     }
 
@@ -391,27 +395,29 @@
                 </tr>
             `;
 
-            var s1Data = JSON.parse(localStorage.getItem('camp_stage1_results_' + currentRoundId) || '[]');
-            s1Data.sort((a,b) => a.s1_seconds - b.s1_seconds);
+            db.ref(`rounds/${currentRoundId}/stage1_results`).on('value', snap => {
+                var s1Data = Object.values(snap.val() || {});
+                s1Data.sort((a,b) => a.s1_seconds - b.s1_seconds);
 
-            tbody.innerHTML = '';
-            if (s1Data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="color:#88a0b5;">等待小队完成第一阶段...</td></tr>';
-                return;
-            }
+                tbody.innerHTML = '';
+                if (s1Data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="color:#88a0b5;">等待小队完成第一阶段...</td></tr>';
+                    return;
+                }
 
-            s1Data.forEach((item, index) => {
-                var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
-                var penText = item.hasPenalty ? '<span class="penalty-tag-yes">⚠️ 超时 (+30s 罚时)</span>' : '<span class="penalty-tag-no">✅ 合格</span>';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${rankIcon}</td>
-                        <td><span class="badge">${item.group}</span></td>
-                        <td>${item.team}</td>
-                        <td style="font-family:monospace; font-weight:bold; color:#00ffcc;">${item.time_s1}</td>
-                        <td>${penText}</td>
-                    </tr>
-                `;
+                s1Data.forEach((item, index) => {
+                    var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
+                    var penText = item.hasPenalty ? '<span class="penalty-tag-yes">⚠️ 超时 (+30s 罚时)</span>' : '<span class="penalty-tag-no">✅ 合格</span>';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${rankIcon}</td>
+                            <td><span class="badge">${item.group}</span></td>
+                            <td>${item.team}</td>
+                            <td style="font-family:monospace; font-weight:bold; color:#00ffcc;">${item.time_s1}</td>
+                            <td>${penText}</td>
+                        </tr>
+                    `;
+                });
             });
 
         } else {
@@ -429,60 +435,63 @@
                 </tr>
             `;
 
-            var data = JSON.parse(localStorage.getItem('camp_leaderboard_' + currentRoundId) || '[]');
-            data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
+            db.ref(`rounds/${currentRoundId}/leaderboard`).on('value', snap => {
+                var data = Object.values(snap.val() || {});
+                data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
-            tbody.innerHTML = '';
-            if(data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="color:#88a0b5;">等待小队提交最终成绩...</td></tr>';
-                return;
-            }
+                tbody.innerHTML = '';
+                if(data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="color:#88a0b5;">等待小队提交最终成绩...</td></tr>';
+                    return;
+                }
 
-            data.forEach((item, index) => {
-                var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
-                var penStatus = item.hasPenalty ? '<span class="penalty-tag-yes">⚠️ 含30s罚时</span>' : '<span class="penalty-tag-no">✅ 正常</span>';
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${rankIcon}</td>
-                        <td><span class="badge">${item.group}</span></td>
-                        <td>${item.team}</td>
-                        <td style="color:#ffd700; font-weight:bold;">${item.score} 分</td>
-                        <td style="font-family:monospace; color:#a0b0c0;">${item.time_stage1 || '-'}</td>
-                        <td style="font-family:monospace; color:#a0b0c0;">${item.time_stage2 || '-'}</td>
-                        <td>${penStatus}</td>
-                        <td style="font-family:monospace; color:#00ffcc; font-weight:bold;">${item.time_used}</td>
-                    </tr>
-                `;
+                data.forEach((item, index) => {
+                    var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
+                    var penStatus = item.hasPenalty ? '<span class="penalty-tag-yes">⚠️ 含30s罚时</span>' : '<span class="penalty-tag-no">✅ 正常</span>';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${rankIcon}</td>
+                            <td><span class="badge">${item.group}</span></td>
+                            <td>${item.team}</td>
+                            <td style="color:#ffd700; font-weight:bold;">${item.score} 分</td>
+                            <td style="font-family:monospace; color:#a0b0c0;">${item.time_stage1 || '-'}</td>
+                            <td style="font-family:monospace; color:#a0b0c0;">${item.time_stage2 || '-'}</td>
+                            <td>${penStatus}</td>
+                            <td style="font-family:monospace; color:#00ffcc; font-weight:bold;">${item.time_used}</td>
+                        </tr>
+                    `;
+                });
             });
         }
     }
 
-    // 颁奖盛典控制 (同步展示罚时)
     function openCeremonyModal() {
         document.getElementById('podium-round-num').innerText = currentRoundId;
-        var data = JSON.parse(localStorage.getItem('camp_leaderboard_' + currentRoundId) || '[]');
-        data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
+        db.ref(`rounds/${currentRoundId}/leaderboard`).once('value', snap => {
+            var data = Object.values(snap.val() || {});
+            data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
-        for (var i = 1; i <= 3; i++) {
-            var item = data[i - 1];
-            var nameEl = document.getElementById('name-rank-' + i);
-            var groupEl = document.getElementById('group-rank-' + i);
-            var scoreEl = document.getElementById('score-rank-' + i);
+            for (var i = 1; i <= 3; i++) {
+                var item = data[i - 1];
+                var nameEl = document.getElementById('name-rank-' + i);
+                var groupEl = document.getElementById('group-rank-' + i);
+                var scoreEl = document.getElementById('score-rank-' + i);
 
-            if (item) {
-                nameEl.innerText = item.team;
-                groupEl.innerText = item.group;
-                var penExtra = item.hasPenalty ? ' <span style="color:#ff4a4a; font-size:10px;">(含30s罚时)</span>' : '';
-                scoreEl.innerHTML = item.score + " 分 (" + item.time_used + ")" + penExtra;
-            } else {
-                nameEl.innerText = "虚位以待";
-                groupEl.innerText = "-";
-                scoreEl.innerText = "-";
+                if (item) {
+                    nameEl.innerText = item.team;
+                    groupEl.innerText = item.group;
+                    var penExtra = item.hasPenalty ? ' <span style="color:#ff4a4a; font-size:10px;">(含30s罚时)</span>' : '';
+                    scoreEl.innerHTML = item.score + " 分 (" + item.time_used + ")" + penExtra;
+                } else {
+                    nameEl.innerText = "虚位以待";
+                    groupEl.innerText = "-";
+                    scoreEl.innerText = "-";
+                }
             }
-        }
 
-        document.getElementById('ceremony-modal').style.display = 'flex';
-        triggerCelebrationEffects();
+            document.getElementById('ceremony-modal').style.display = 'flex';
+            triggerCelebrationEffects();
+        });
     }
 
     function closeCeremonyModal() {
@@ -576,18 +585,12 @@
 
     function clearCurrentRoundData() {
         if (confirm(`⚠️ 确定要清空第 ${currentRoundId} 轮的所有成绩与登记数据吗？`)) {
-            localStorage.removeItem('camp_leaderboard_' + currentRoundId);
-            localStorage.removeItem('camp_stage1_results_' + currentRoundId);
-            localStorage.removeItem('camp_registered_teams_' + currentRoundId);
-            localStorage.removeItem('camp_room_state_' + currentRoundId);
-            syncUI();
+            db.ref(`rounds/${currentRoundId}`).remove();
+            alert("数据已清空！");
         }
     }
 
-    window.addEventListener('storage', syncUI);
-
     initRounds();
-    setInterval(syncUI, 2000);
 </script>
 </body>
 </html>
