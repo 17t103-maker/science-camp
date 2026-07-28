@@ -24,7 +24,7 @@
         .btn-new-round { background: #ffd700; color: #0a1118; border: none; font-weight: bold; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
 
         .board-container {
-            max-width: 980px; margin: 0 auto; background: #132230;
+            max-width: 1020px; margin: 0 auto; background: #132230;
             border: 2px solid #00ffcc; border-radius: 12px; padding: 20px;
             box-shadow: 0 0 30px rgba(0,0,0,0.8); position: relative;
         }
@@ -54,11 +54,11 @@
         }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px 6px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        th { color: #ffd700; font-size: 15px; border-bottom: 2px solid #ffd700; }
-        tr:nth-child(1) td { color: #ffd700; font-weight: bold; font-size: 18px; }
-        tr:nth-child(2) td { color: #c0c0c0; font-weight: bold; font-size: 17px; }
-        tr:nth-child(3) td { color: #cd7f32; font-weight: bold; font-size: 16px; }
+        th, td { padding: 10px 6px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 13px; }
+        th { color: #ffd700; font-size: 14px; border-bottom: 2px solid #ffd700; }
+        tr:nth-child(1) td { color: #ffd700; font-weight: bold; font-size: 16px; }
+        tr:nth-child(2) td { color: #c0c0c0; font-weight: bold; font-size: 15px; }
+        tr:nth-child(3) td { color: #cd7f32; font-weight: bold; font-size: 15px; }
         .badge {
             background: rgba(0,255,204,0.1); border: 1px solid #00ffcc;
             padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #00ffcc;
@@ -71,6 +71,8 @@
         .btn-stage1 { background: #00ffcc; color: #0a1118; }
         .btn-stage2 { background: #ffd700; color: #0a1118; }
         .btn-end { background: #ff4a4a; color: #fff; }
+        .btn-answer { background: #00b3ff; color: #fff; }
+        .btn-regrade { background: #ff9900; color: #0a1118; }
         .btn-ceremony {
             background: linear-gradient(135deg, #ffd700, #ff8c00);
             color: #0a1118; box-shadow: 0 0 15px rgba(255,215,0,0.5); font-size: 14px;
@@ -86,10 +88,15 @@
             display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10, 17, 24, 0.95); z-index: 2000; justify-content: center; align-items: center;
         }
+        .modal-box {
+            background: #132230; border: 2px solid #00ffcc; border-radius: 12px;
+            padding: 25px; max-width: 550px; width: 90%; max-height: 85vh; overflow-y: auto; text-align: left;
+        }
+        
         .podium-modal {
             background: #132230; border: 3px solid #ffd700; border-radius: 16px;
             padding: 30px 20px; max-width: 750px; width: 92%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
-            position: relative; overflow: hidden;
+            position: relative; overflow: hidden; text-align: center;
         }
         .podium-stage {
             display: flex; justify-content: center; align-items: flex-end;
@@ -122,6 +129,12 @@
         .podium-group-tag { font-size: 11px; color: #00ffcc; margin-top: 2px; }
         .podium-score { font-size: 13px; color: #ffd700; font-weight: bold; margin-top: 2px; }
         .podium-rank-num { font-size: 42px; font-weight: 900; color: rgba(255,255,255,0.3); }
+
+        .answer-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 15px 0; }
+        .answer-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 6px; }
+        .answer-select { padding: 6px; background: #0a1118; border: 1px solid #00ffcc; color: #00ffcc; border-radius: 4px; }
+
+        .detail-card { background: rgba(0,0,0,0.3); border: 1px solid #334e68; border-radius: 6px; padding: 10px; margin-bottom: 8px; }
 
         #confetti-canvas {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -160,6 +173,7 @@
     <div class="board-container">
         <div class="control-panel-box">
             <div>状态：<b id="status-text" style="color:#ffd700;">等待开始</b></div>
+            <button class="btn-ctrl btn-answer" onclick="openAnswerModal()">⚙️ 设定本轮参考答案</button>
             <button class="btn-ctrl btn-stage1" id="btn-start-s1" onclick="startStage1()">🚀 启动阶段一 (开始比赛)</button>
             <button class="btn-ctrl btn-stage2" id="btn-start-s2" onclick="startStage2()" disabled>🧪 启动阶段二统一答题</button>
             <button class="btn-ctrl btn-end" id="btn-end-round" onclick="endCurrentRound()">🏁 结束本轮比赛</button>
@@ -171,7 +185,11 @@
             <div id="registered-teams-list" style="margin-top:5px;"></div>
         </div>
 
-        <h3 id="table-title" style="color:#00ffcc; font-size:16px; text-align:left; margin:15px 0 5px 0;">📊 实时榜单：</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0 5px 0;">
+            <h3 id="table-title" style="color:#00ffcc; font-size:16px; margin:0;">📊 实时榜单：</h3>
+            <button class="btn-ctrl btn-regrade" style="font-size:11px; padding:4px 10px;" onclick="regradeAllSubmissions()">🔄 按新答案重新批阅本轮所有人成绩</button>
+        </div>
+
         <table>
             <thead id="leaderboard-head"></thead>
             <tbody id="leaderboard-body"></tbody>
@@ -183,7 +201,72 @@
         </div>
     </div>
 
-    <!-- 颁奖盛典弹窗 -->
+    <!-- 1. 答案设定弹窗 -->
+    <div class="overlay" id="answer-modal" style="display:none;">
+        <div class="modal-box">
+            <h2 style="color:#00ffcc; margin-top:0;">⚙️ 设定第 <span id="ans-round-num">1</span> 轮未知溶液标准答案</h2>
+            <p style="font-size:12px; color:#a0b0c0;">请根据本轮实物试剂真实调配情况，指定 A-E 溶液的正确酸碱性：</p>
+            
+            <div class="answer-grid">
+                <div class="answer-row">
+                    <b>未知溶液 A：</b>
+                    <select class="answer-select" id="ans-A">
+                        <option value="强酸性">强酸性</option><option value="弱酸性">弱酸性</option>
+                        <option value="中性">中性</option><option value="弱碱性">弱碱性</option><option value="强碱性">强碱性</option>
+                    </select>
+                </div>
+                <div class="answer-row">
+                    <b>未知溶液 B：</b>
+                    <select class="answer-select" id="ans-B">
+                        <option value="强酸性">强酸性</option><option value="弱酸性" selected>弱酸性</option>
+                        <option value="中性">中性</option><option value="弱碱性">弱碱性</option><option value="强碱性">强碱性</option>
+                    </select>
+                </div>
+                <div class="answer-row">
+                    <b>未知溶液 C：</b>
+                    <select class="answer-select" id="ans-C">
+                        <option value="强酸性">强酸性</option><option value="弱酸性">弱酸性</option>
+                        <option value="中性" selected>中性</option><option value="弱碱性">弱碱性</option><option value="强碱性">强碱性</option>
+                    </select>
+                </div>
+                <div class="answer-row">
+                    <b>未知溶液 D：</b>
+                    <select class="answer-select" id="ans-D">
+                        <option value="强酸性">强酸性</option><option value="弱酸性">弱酸性</option>
+                        <option value="中性">中性</option><option value="弱碱性" selected>弱碱性</option><option value="强碱性">强碱性</option>
+                    </select>
+                </div>
+                <div class="answer-row">
+                    <b>未知溶液 E：</b>
+                    <select class="answer-select" id="ans-E">
+                        <option value="强酸性">强酸性</option><option value="弱酸性">弱酸性</option>
+                        <option value="中性">中性</option><option value="弱碱性">弱碱性</option><option value="强碱性" selected>强碱性</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:15px;">
+                <button class="btn-ctrl btn-export" onclick="closeAnswerModal()">取消</button>
+                <button class="btn-ctrl btn-stage1" onclick="saveAnswers()">💾 保存并更新本轮答案</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 学生作答明细检视弹窗 -->
+    <div class="overlay" id="detail-modal" style="display:none;">
+        <div class="modal-box">
+            <h2 style="color:#ffd700; margin-top:0;">🔍 特工小队答题检视</h2>
+            <p style="font-size:13px; color:#fff; margin-bottom:15px;">
+                队伍：<b id="detail-team-name" style="color:#00ffcc;">-</b>
+            </p>
+            <div id="detail-content-list"></div>
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn-ctrl btn-export" onclick="closeDetailModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 颁奖盛典弹窗 -->
     <div class="overlay" id="ceremony-modal" style="display:none;">
         <div class="podium-modal">
             <h2 style="color:#ffd700; font-size:28px; margin:0; text-shadow:0 0 15px rgba(255,215,0,0.6);">🎉 第 <span id="podium-round-num">1</span> 轮 · 荣耀颁奖台 🎉</h2>
@@ -246,9 +329,9 @@
     const db = firebase.database();
 
     var currentRoundId = '1';
+    var defaultAnswers = { 'A': '强酸性', 'B': '弱酸性', 'C': '中性', 'D': '弱碱性', 'E': '强碱性' };
 
     function initRounds() {
-        // 从云端拉取轮次列表
         db.ref('rounds_list').on('value', (snap) => {
             var rounds = snap.val() || ["1"];
             db.ref('current_round_id').once('value', (curSnap) => {
@@ -304,6 +387,31 @@
         });
     }
 
+    function openAnswerModal() {
+        document.getElementById('ans-round-num').innerText = currentRoundId;
+        db.ref(`rounds/${currentRoundId}/answers`).once('value', snap => {
+            var ans = snap.val() || defaultAnswers;
+            ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+                document.getElementById('ans-' + k).value = ans[k] || defaultAnswers[k];
+            });
+            document.getElementById('answer-modal').style.display = 'flex';
+        });
+    }
+
+    function closeAnswerModal() {
+        document.getElementById('answer-modal').style.display = 'none';
+    }
+
+    function saveAnswers() {
+        var newAnswers = {};
+        ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+            newAnswers[k] = document.getElementById('ans-' + k).value;
+        });
+        db.ref(`rounds/${currentRoundId}/answers`).set(newAnswers);
+        alert(`✅ 第 ${currentRoundId} 轮参考答案已成功更新！`);
+        closeAnswerModal();
+    }
+
     function startStage1() {
         if (confirm("📢 是否确认立即统一开启【阶段一】？")) {
             var state = { status: 'stage1', stage1_started: true, stage1_time: new Date().toISOString() };
@@ -325,14 +433,11 @@
         }
     }
 
-    // 监听实时数据变动并刷新 UI
     function listenCurrentRoundData() {
-        // 1. PIN 码
         db.ref(`rounds/${currentRoundId}/pin`).on('value', snap => {
             document.getElementById('current-pin-display').innerText = snap.val() || '----';
         });
 
-        // 2. 状态控制
         db.ref(`rounds/${currentRoundId}/room_state`).on('value', snap => {
             var state = snap.val() || { status: 'waiting' };
             var statusTxt = document.getElementById('status-text');
@@ -361,7 +466,6 @@
             updateLeaderboard(state.status);
         });
 
-        // 3. 已登记队伍
         db.ref(`rounds/${currentRoundId}/registered_teams`).on('value', snap => {
             var data = snap.val() || {};
             var regs = Object.values(data);
@@ -432,6 +536,7 @@
                     <th>阶段二用时</th>
                     <th>罚时状态</th>
                     <th>总用时</th>
+                    <th>操作</th>
                 </tr>
             `;
 
@@ -441,7 +546,7 @@
 
                 tbody.innerHTML = '';
                 if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="color:#88a0b5;">等待小队提交最终成绩...</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="9" style="color:#88a0b5;">等待小队提交最终成绩...</td></tr>';
                     return;
                 }
 
@@ -458,11 +563,99 @@
                             <td style="font-family:monospace; color:#a0b0c0;">${item.time_stage2 || '-'}</td>
                             <td>${penStatus}</td>
                             <td style="font-family:monospace; color:#00ffcc; font-weight:bold;">${item.time_used}</td>
+                            <td>
+                                <button class="btn-ctrl btn-answer" style="padding:2px 8px; font-size:11px;" onclick="viewTeamDetail('${item.group}')">👁️ 明细</button>
+                            </td>
                         </tr>
                     `;
                 });
             });
         }
+    }
+
+    // 检视特定队伍答题明细
+    function viewTeamDetail(groupKey) {
+        db.ref(`rounds/${currentRoundId}/leaderboard/${groupKey}`).once('value', snap => {
+            var item = snap.val();
+            if(!item) return;
+
+            document.getElementById('detail-team-name').innerText = item.group + " - " + item.team;
+            var listContainer = document.getElementById('detail-content-list');
+            listContainer.innerHTML = '';
+
+            db.ref(`rounds/${currentRoundId}/answers`).once('value', ansSnap => {
+                var stdAns = ansSnap.val() || defaultAnswers;
+
+                if (item.details) {
+                    ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+                        var d = item.details[k] || { choice: '未答', attempts: 0, score: 0 };
+                        var correctVal = stdAns[k] || defaultAnswers[k];
+                        var isRight = (d.choice === correctVal);
+                        
+                        listContainer.innerHTML += `
+                            <div class="detail-card" style="border-left: 4px solid ${isRight ? '#00ffcc' : '#ff4a4a'}">
+                                <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                                    <span>未知溶液 ${k}</span>
+                                    <span style="color:${isRight ? '#00ffcc' : '#ff4a4a'}">${isRight ? '✅ 正确' : '❌ 错误'} (${d.score} 分)</span>
+                                </div>
+                                <div style="font-size:12px; color:#a0b0c0; margin-top:5px;">
+                                    学生提交：<b style="color:#fff">${d.choice}</b> | 
+                                    标准答案：<b style="color:#ffd700">${correctVal}</b> | 
+                                    尝试次数：${d.attempts} 次
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    listContainer.innerHTML = '<div style="color:#888;">该队暂无作答明细记录（旧版本数据）。</div>';
+                }
+
+                document.getElementById('detail-modal').style.display = 'flex';
+            });
+        });
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detail-modal').style.display = 'none';
+    }
+
+    // 重新批阅本轮所有学生的答题
+    function regradeAllSubmissions() {
+        if(!confirm(`⚠️ 确定要按照【当前设定好的标准答案】重新批阅第 ${currentRoundId} 轮所有小队的成绩吗？`)) return;
+
+        db.ref(`rounds/${currentRoundId}/answers`).once('value', ansSnap => {
+            var stdAns = ansSnap.val() || defaultAnswers;
+
+            db.ref(`rounds/${currentRoundId}/leaderboard`).once('value', snap => {
+                var allTeams = snap.val() || {};
+                var updatedCount = 0;
+
+                Object.keys(allTeams).forEach(groupKey => {
+                    var item = allTeams[groupKey];
+                    if (item.details) {
+                        var newTotalScore = 0;
+                        ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+                            var d = item.details[k];
+                            if (d && d.choice) {
+                                if (d.choice === stdAns[k]) {
+                                    // 依据原尝试次数重新判定分值
+                                    d.score = (d.attempts === 1) ? 2 : 1;
+                                } else {
+                                    d.score = 0;
+                                }
+                                newTotalScore += d.score;
+                            }
+                        });
+
+                        item.score = newTotalScore;
+                        db.ref(`rounds/${currentRoundId}/leaderboard/${groupKey}`).set(item);
+                        updatedCount++;
+                    }
+                });
+
+                alert(`🎉 重新批阅完成！共更新 ${updatedCount} 个小队的成绩。`);
+            });
+        });
     }
 
     function openCeremonyModal() {
