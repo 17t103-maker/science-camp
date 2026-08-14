@@ -246,8 +246,8 @@
         }
         .seat-btn:hover { border-color: var(--primary); color: var(--primary); background: rgba(0, 255, 204, 0.1); }
         .seat-btn.selected {
-            background: var(--primary); color: #0a1118; border-color: var(--primary);
-            box-shadow: 0 0 12px var(--primary); font-size: 15px;
+            background: var(--primary) !important; color: #0a1118 !important; border-color: var(--primary) !important;
+            box-shadow: 0 0 12px var(--primary) !important; font-size: 15px;
         }
 
         .waiting-badge {
@@ -309,7 +309,7 @@
         </div>
         <div style="display:flex; gap:10px;">
             <button class="btn-action btn-capture" onclick="registerTeam()">🚀 验证并提交登记</button>
-            <button class="btn-action" id="btn-cancel-edit" onclick="cancelEditModal()" style="display:none; width:auto; padding:0 20px;">取消</button>
+            <button class="btn-action" id="btn-cancel-edit" onclick="cancelEditModal()" style="display:none; width:auto; padding:0 20px; background:#445566; border-color:#8899aa;">取消</button>
         </div>
     </div>
 </div>
@@ -323,7 +323,7 @@
             <span class="waiting-badge" style="font-size:14px; padding:8px 16px;">正在等待老师统一启动阶段一...</span>
         </div>
         <p style="font-size:12px; color:#a0b0c0;">请抬头看现场大屏幕，老师按下启动后将自动开始任务！</p>
-        <button onclick="openEditModal()" style="background:rgba(255,255,255,0.1); border:1px solid #ffd700; color:#ffd700; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px; margin-top:10px;">✏️ 组别/队名填错了？点此修改</button>
+        <button onclick="openEditModal()" style="background:rgba(255,255,255,0.1); border:1px solid #ffd700; color:#ffd700; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:13px; font-weight:bold; margin-top:10px;">✏️ 组别/队名填错了？点此修改</button>
     </div>
 </div>
 
@@ -332,7 +332,7 @@
     <div class="team-bar" style="margin:0;">
         <div style="display:flex; align-items:center; gap:8px;">
             <span>当前小队：<b id="display-team-info" style="color:#fff;">-</b></span>
-            <button id="btn-top-edit" onclick="openEditModal()" style="background:none; border:1px solid rgba(0,255,204,0.4); color:#00ffcc; font-size:11px; padding:2px 6px; border-radius:3px; cursor:pointer;">✏️ 修改</button>
+            <button id="btn-top-edit" onclick="openEditModal()" style="background:rgba(0,255,204,0.1); border:1px solid #00ffcc; color:#00ffcc; font-size:11px; padding:3px 8px; border-radius:4px; cursor:pointer; font-weight:bold;">✏️ 修改小队</button>
         </div>
         <div>🧪 阶段一：<b id="timer-stage1-display" style="color:#00ffcc; font-family:monospace; font-size:18px;">00:00</b></div>
         <div>🔬 阶段二：<b id="timer-stage2-display" style="color:#ffd700; font-family:monospace; font-size:18px;">00:00</b></div>
@@ -481,7 +481,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 🆔 产生唯一的客户端 Device/Session ID，杜绝同组名相互覆盖
     function getSessionId() {
         var sid = localStorage.getItem('sci_camp_session_id');
         if (!sid) {
@@ -539,18 +538,20 @@
         if (btnEl) btnEl.classList.add('selected');
     }
 
-    // 打开修改身份弹窗
+    // 🔧 修复并增强 openEditModal
     function openEditModal() {
+        document.getElementById('waiting-modal').style.display = 'none'; // 隐藏等待弹窗
         document.getElementById('reg-modal-title').innerText = "✏️ 修改特工小组信息";
         document.getElementById('btn-cancel-edit').style.display = "block";
-        document.getElementById('team-name-input').value = teamName;
+        document.getElementById('team-name-input').value = teamName || '';
         
-        // 选中之前的座位
+        selectedGroup = groupName || '';
         var allButtons = document.querySelectorAll('.seat-btn');
         allButtons.forEach(b => {
-            if (b.innerText.trim() === groupName) {
+            var label = b.innerText.replace(/\s+/g, '');
+            var target = (groupName || '').replace(/\s+/g, '');
+            if (target && label === target) {
                 b.classList.add('selected');
-                selectedGroup = groupName;
             } else {
                 b.classList.remove('selected');
             }
@@ -560,9 +561,12 @@
 
     function cancelEditModal() {
         document.getElementById('register-modal').style.display = 'none';
+        if (!isStage1Started && teamName) {
+            document.getElementById('waiting-modal').style.display = 'flex';
+        }
     }
 
-    // 登记并校验云端 PIN 码（允许重复登记，以 session_id 为区分）
+    // 登记并校验云端 PIN 码
     function registerTeam() {
         db.ref('current_round_id').once('value', (snap) => {
             currentRoundId = snap.val() || '1';
@@ -598,7 +602,6 @@
                     regTime: new Date().toLocaleTimeString()
                 });
 
-                // 如果已经在答题中修改了信息，同步刷新结果库
                 if (isStage1Finished) submitStage1Result();
                 if (isMissionFinished) finishMission(false, true);
 
@@ -608,7 +611,6 @@
         });
     }
 
-    // 实时监听
     function listenGlobalSignal() {
         if (!teamName) return;
 
@@ -650,6 +652,7 @@
     function unlockStage1(startTimeStr) {
         isStage1Started = true;
         document.getElementById('waiting-modal').style.display = 'none';
+        document.getElementById('register-modal').style.display = 'none';
         document.getElementById('status-bar-container').style.display = 'block';
 
         document.getElementById('btn-acid').disabled = false;
@@ -741,7 +744,6 @@
         }
     }
 
-    // 提前跳过/未完成阶段一
     function skipStage1() {
         if (!confirm("⚠️ 确定要提前结算并进入阶段二吗？\n提前结束将自动被判定为【超时】并在阶段二追加 30 秒罚时！")) return;
         completeStage1(true);
@@ -755,7 +757,6 @@
         document.getElementById('btn-capture').disabled = true;
         document.getElementById('btn-skip-s1').disabled = true;
 
-        // ⏱️ 修改规则：大于 5 分钟 (300 秒) 或提前放弃均视为超时罚时
         hasPenalty = isSkipped || (stage1Seconds > 300);
         submitStage1Result();
 
