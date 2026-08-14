@@ -525,6 +525,107 @@
         'E': { attempts: 0, score: 0, solved: false, userChoice: '' }
     };
 
+    var currentpH = 7, capturedpHs = new Set(), dripCount = 0, lastDirection = 0;
+
+    // 💾 本地持久化保存与恢复模块
+    function saveLocalProgress() {
+        var state = {
+            roundId: currentRoundId,
+            groupName: groupName,
+            teamName: teamName,
+            isStage1Finished: isStage1Finished,
+            stage1Seconds: stage1Seconds,
+            hasPenalty: hasPenalty,
+            capturedpHs: Array.from(capturedpHs),
+            sampleState: sampleState,
+            totalScore: totalScore,
+            completedCount: completedCount,
+            isMissionFinished: isMissionFinished
+        };
+        localStorage.setItem('sci_camp_progress_' + currentRoundId, JSON.stringify(state));
+    }
+
+    function tryRestoreLocalProgress(rId) {
+        var raw = localStorage.getItem('sci_camp_progress_' + rId);
+        if (!raw) return false;
+        try {
+            var state = JSON.parse(raw);
+            if (state && state.teamName) {
+                groupName = state.groupName;
+                teamName = state.teamName;
+                selectedGroup = groupName;
+                isStage1Finished = state.isStage1Finished || false;
+                stage1Seconds = state.stage1Seconds || 0;
+                hasPenalty = state.hasPenalty || false;
+                totalScore = state.totalScore || 0;
+                completedCount = state.completedCount || 0;
+                isMissionFinished = state.isMissionFinished || false;
+
+                if (state.capturedpHs) {
+                    capturedpHs = new Set(state.capturedpHs);
+                    capturedpHs.forEach(ph => {
+                        var data = phColors[ph];
+                        var block = document.getElementById('block-' + ph);
+                        var txt = document.getElementById('txt-' + ph);
+                        var slot = document.getElementById('slot-' + ph);
+                        if (block && txt && slot && data) {
+                            block.style.backgroundColor = data.hex;
+                            txt.innerText = "已锁定"; txt.style.color = '#00ffcc';
+                            slot.style.borderColor = '#00ffcc';
+                        }
+                    });
+                }
+
+                if (state.sampleState) {
+                    sampleState = state.sampleState;
+                }
+
+                document.getElementById('register-modal').style.display = 'none';
+                document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
+                document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
+                document.getElementById('score-display').innerText = totalScore;
+
+                renderStage2Cards();
+
+                // 恢复阶段二题目状态
+                ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+                    var s = sampleState[k];
+                    if (s) {
+                        var sel = document.getElementById('select-' + k);
+                        var btn = document.getElementById('btn-verify-' + k);
+                        var stat = document.getElementById('status-' + k);
+                        if (sel && s.userChoice) sel.value = s.userChoice;
+                        if (stat) {
+                            if (s.solved) {
+                                if (s.score > 0) {
+                                    stat.innerText = `✅ 正确 (+${s.score}分)`;
+                                    stat.style.color = '#00ffcc';
+                                } else {
+                                    stat.innerText = `❌ 错误！未得分`;
+                                    stat.style.color = '#ff4a4a';
+                                }
+                                if (sel) sel.disabled = true;
+                                if (btn) btn.disabled = true;
+                            } else if (s.attempts === 1) {
+                                stat.innerText = `❌ 错误！还有1次机会`;
+                                stat.style.color = '#ff9900';
+                            }
+                        }
+                    }
+                });
+
+                if (isMissionFinished) {
+                    document.getElementById('status-bar-container').style.display = 'block';
+                    var stage2 = document.getElementById('stage2-app');
+                    stage2.classList.add('unlocked');
+                    finishMission(false, false);
+                }
+                return true;
+            }
+        } catch (e) { console.log(e); }
+        return false;
+    }
+
     function fmtTime(sec) {
         var m = String(Math.floor(sec / 60)).padStart(2, '0');
         var s = String(sec % 60).padStart(2, '0');
@@ -569,12 +670,10 @@
         }
     }
 
-    // 🛡️ 注册与校验：禁止重复组别/队名 + 阶段二后禁止加入
     function registerTeam() {
         db.ref('current_round_id').once('value', (snap) => {
             currentRoundId = snap.val() || '1';
             
-            // 1. 检查老师是否已经启动阶段二或结束比赛 (防作弊)
             db.ref(`rounds/${currentRoundId}/room_state`).once('value', (stateSnap) => {
                 var rState = stateSnap.val() || { status: 'waiting' };
                 if (rState.status === 'stage2' || rState.status === 'ended' || rState.stage2_started) {
@@ -582,7 +681,6 @@
                     return;
                 }
 
-                // 2. 校验 PIN 码
                 db.ref(`rounds/${currentRoundId}/pin`).once('value', (pinSnap) => {
                     var correctPin = pinSnap.val() || '5829';
                     var userPin = document.getElementById('pin-code-input').value.trim();
@@ -596,14 +694,12 @@
                     if(!tName) { alert("请输入小队名称！"); return; }
                     if(tName.length > 10) { alert("小队名称不能超过10个字符！"); return; }
 
-                    // 3. 🛡️ 查重校验：检查组别 (selectedGroup) 和队名 (tName) 是否已被其他同学占用
                     db.ref(`rounds/${currentRoundId}/registered_teams`).once('value', (regSnap) => {
                         var regMap = regSnap.val() || {};
                         var isGroupDuplicate = false;
                         var isTeamDuplicate = false;
 
                         Object.keys(regMap).forEach(k => {
-                            // 排除自身修改
                             if (k !== mySessionId) {
                                 var item = regMap[k];
                                 if (item.group === selectedGroup) isGroupDuplicate = true;
@@ -630,7 +726,8 @@
                         document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
                         document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
 
-                        // 保存注册信息
+                        saveLocalProgress();
+
                         db.ref(`rounds/${currentRoundId}/registered_teams/${mySessionId}`).set({
                             sessionId: mySessionId,
                             group: groupName,
@@ -674,7 +771,6 @@
             }
 
             if (roomState.stage2_started && !isStage2Started) {
-                // 阶段二开启后，隐藏顶部的“修改”按钮，避免作弊
                 var topEditBtn = document.getElementById('btn-top-edit');
                 if (topEditBtn) topEditBtn.style.display = 'none';
                 unlockStage2Controls(roomState.stage2_time);
@@ -696,23 +792,27 @@
         document.getElementById('register-modal').style.display = 'none';
         document.getElementById('status-bar-container').style.display = 'block';
 
-        document.getElementById('btn-acid').disabled = false;
-        document.getElementById('btn-alkali').disabled = false;
-        document.getElementById('btn-capture').disabled = false;
-        document.getElementById('btn-skip-s1').disabled = false;
+        if (!isStage1Finished) {
+            document.getElementById('btn-acid').disabled = false;
+            document.getElementById('btn-alkali').disabled = false;
+            document.getElementById('btn-capture').disabled = false;
+            document.getElementById('btn-skip-s1').disabled = false;
+        }
 
         stage1StartTime = startTimeStr ? new Date(startTimeStr) : new Date();
         if (stage1Timer) clearInterval(stage1Timer);
         stage1Timer = setInterval(function() {
-            stage1Seconds = Math.max(0, Math.floor((new Date() - new Date(stage1StartTime)) / 1000));
-            document.getElementById('timer-stage1-display').innerText = fmtTime(stage1Seconds);
+            if (!isStage1Finished) {
+                stage1Seconds = Math.max(0, Math.floor((new Date() - new Date(stage1StartTime)) / 1000));
+                document.getElementById('timer-stage1-display').innerText = fmtTime(stage1Seconds);
+            } else {
+                document.getElementById('timer-stage1-display').innerText = fmtTime(stage1Seconds);
+            }
         }, 1000);
     }
 
-    // 阶段一光谱逻辑
-    var currentpH = 7, capturedpHs = new Set(), dripCount = 0, lastDirection = 0;
+    // 阶段一光谱渲染初始化
     var bar = document.getElementById('spectrum-bar');
-    
     for(var i=2; i<=11; i++) {
         var typeText = "", typeColor = "#88a0b5";
         if (i <= 3) { typeText = "强酸性"; typeColor = "#ff4d4d"; }
@@ -730,7 +830,7 @@
     }
 
     function triggerDrip(direction) {
-        if (!isStage1Started) return;
+        if (!isStage1Started || isStage1Finished) return;
         if (lastDirection !== direction) {
             dripCount = 0; lastDirection = direction;
             document.getElementById('drip-loading').style.width = '0%';
@@ -769,7 +869,7 @@
     }
 
     function captureColor() {
-        if (!isStage1Started) return;
+        if (!isStage1Started || isStage1Finished) return;
         capturedpHs.add(currentpH);
         var data = phColors[currentpH];
         var block = document.getElementById('block-' + currentpH);
@@ -780,6 +880,8 @@
             txt.innerText = "已锁定"; txt.style.color = '#00ffcc';
             slot.style.borderColor = '#00ffcc';
         }
+        saveLocalProgress();
+
         if(capturedpHs.size === 10 && !isStage1Finished) {
             completeStage1(false);
         }
@@ -799,6 +901,7 @@
         document.getElementById('btn-skip-s1').disabled = true;
 
         hasPenalty = isSkipped || (stage1Seconds > 300);
+        saveLocalProgress();
         submitStage1Result();
 
         var alertBox = document.getElementById('penalty-alert-box');
@@ -916,15 +1019,22 @@
 
     function unlockStage2Controls(globalStartTime) {
         isStage2Started = true;
+        var stage2App = document.getElementById('stage2-app');
+        if (stage2App) stage2App.classList.add('unlocked');
+
         var badge = document.getElementById('stage2-status-badge');
-        badge.className = "";
-        badge.style.cssText = "font-size: 12px; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 2px 8px; border-radius: 4px;";
-        badge.innerText = "已解锁 (正在计时)";
+        if (badge) {
+            badge.className = "";
+            badge.style.cssText = "font-size: 12px; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 2px 8px; border-radius: 4px;";
+            badge.innerText = "已解锁 (正在计时)";
+        }
 
         ['A', 'B', 'C', 'D', 'E'].forEach(function(key) {
             if (!sampleState[key].solved && sampleState[key].attempts < 2) {
-                document.getElementById('select-' + key).disabled = false;
-                document.getElementById('btn-verify-' + key).disabled = false;
+                var s = document.getElementById('select-' + key);
+                var b = document.getElementById('btn-verify-' + key);
+                if (s) s.disabled = false;
+                if (b) b.disabled = false;
             }
         });
 
@@ -932,12 +1042,14 @@
         if (stage2Timer) clearInterval(stage2Timer);
         
         stage2Timer = setInterval(function() {
-            stage2Seconds = Math.max(0, Math.floor((new Date() - new Date(stage2StartTime)) / 1000));
-            var displaySec = stage2Seconds + (hasPenalty ? 30 : 0);
-            var timeStr = fmtTime(displaySec) + (hasPenalty ? " (+30s)" : "");
-            
-            document.getElementById('timer-stage2-display').innerText = timeStr;
-            document.getElementById('stage2-big-clock').innerText = timeStr;
+            if (!isMissionFinished) {
+                stage2Seconds = Math.max(0, Math.floor((new Date() - new Date(stage2StartTime)) / 1000));
+                var displaySec = stage2Seconds + (hasPenalty ? 30 : 0);
+                var timeStr = fmtTime(displaySec) + (hasPenalty ? " (+30s)" : "");
+                
+                document.getElementById('timer-stage2-display').innerText = timeStr;
+                document.getElementById('stage2-big-clock').innerText = timeStr;
+            }
         }, 1000);
     }
 
@@ -985,6 +1097,7 @@
         }
 
         document.getElementById('score-display').innerText = totalScore;
+        saveLocalProgress();
 
         if (completedCount === 5) {
             finishMission();
@@ -1007,6 +1120,8 @@
         document.getElementById('final-time-s2').innerText = fmtTime(finalStage2Sec);
         document.getElementById('final-time-total').innerText = fmtTime(totalSec);
         document.getElementById('penalty-text-display').innerHTML = hasPenalty ? ' | <b class="penalty-tag">含30s超时罚时</b>' : '';
+
+        saveLocalProgress();
 
         var payload = {
             sessionId: mySessionId,
@@ -1078,6 +1193,19 @@
         });
     }
 
+    // 🚀 页面初始化检查：监听轮次并尝试自动恢复
+    function initStudentClient() {
+        renderStage2Cards();
+        db.ref('current_round_id').on('value', (snap) => {
+            var rId = snap.val() || '1';
+            currentRoundId = rId;
+            var isRestored = tryRestoreLocalProgress(rId);
+            if (isRestored) {
+                listenGlobalSignal();
+            }
+        });
+    }
+
     // 防作弊
     document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
     document.addEventListener('keydown', function(e) {
@@ -1089,6 +1217,8 @@
             e.preventDefault();
         }
     });
+
+    initStudentClient();
 </script>
 </body>
 </html>
