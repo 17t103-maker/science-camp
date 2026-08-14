@@ -12,7 +12,6 @@
             font-family: 'Microsoft YaHei', sans-serif; padding: 20px; text-align: center;
         }
 
-        /* 🖼️ 老师端响应式 Header 布局 */
         .teacher-top-header-wrapper {
             max-width: 1100px;
             margin: 0 auto 15px auto;
@@ -27,7 +26,7 @@
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
         }
         .header-logo {
-            height: 60px; /* 电脑/大屏幕端标准高度 */
+            height: 60px;
             width: auto;
             max-width: 160px;
             object-fit: contain;
@@ -39,14 +38,13 @@
             text-align: center;
         }
 
-        /* 📱 手机屏幕适配 */
         @media (max-width: 600px) {
             .teacher-top-header-wrapper {
                 padding: 8px 12px;
                 gap: 8px;
             }
             .header-logo {
-                height: 42px; /* 移动端按比例缩小 */
+                height: 42px;
                 max-width: 95px;
             }
             h1 {
@@ -148,42 +146,38 @@
             padding: 25px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; text-align: left;
         }
 
+        /* 🏆 Top 5 颁奖台样式 */
         .podium-modal {
             background: #132230; border: 3px solid #ffd700; border-radius: 16px;
-            padding: 30px 20px; max-width: 750px; width: 92%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
+            padding: 30px 15px; max-width: 900px; width: 95%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
             position: relative; overflow: hidden; text-align: center;
         }
         .podium-stage {
             display: flex; justify-content: center; align-items: flex-end;
-            margin-top: 40px; margin-bottom: 20px; gap: 15px; height: 260px;
+            margin-top: 50px; margin-bottom: 20px; gap: 8px; height: 290px;
         }
         .podium-step {
             flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
             border-radius: 8px 8px 0 0; position: relative; transition: all 0.5s ease;
         }
-        .step-1 {
-            height: 180px; background: linear-gradient(180deg, #ffd700, #b38f00);
-            border: 2px solid #fff; box-shadow: 0 0 20px rgba(255,215,0,0.6); order: 2;
-        }
-        .step-2 {
-            height: 130px; background: linear-gradient(180deg, #c0c0c0, #7f8c8d);
-            border: 2px solid #fff; order: 1;
-        }
-        .step-3 {
-            height: 90px; background: linear-gradient(180deg, #cd7f32, #8b4513);
-            border: 2px solid #fff; order: 3;
-        }
+        
+        /* 顺序：4 - 2 - 1 - 3 - 5 */
+        .step-1 { height: 180px; background: linear-gradient(180deg, #ffd700, #b38f00); border: 2px solid #fff; box-shadow: 0 0 20px rgba(255,215,0,0.6); order: 3; }
+        .step-2 { height: 140px; background: linear-gradient(180deg, #c0c0c0, #7f8c8d); border: 2px solid #fff; order: 2; }
+        .step-3 { height: 105px; background: linear-gradient(180deg, #cd7f32, #8b4513); border: 2px solid #fff; order: 4; }
+        .step-4 { height: 75px; background: linear-gradient(180deg, #2b5876, #4e4376); border: 1px solid #00ffcc; order: 1; }
+        .step-5 { height: 60px; background: linear-gradient(180deg, #1f4037, #99f2c8); border: 1px solid #00ffcc; order: 5; }
         
         .podium-card {
-            position: absolute; top: -110px; width: 95%; text-align: center;
-            background: rgba(10, 17, 24, 0.85); border: 1px solid rgba(255,255,255,0.2);
-            padding: 8px 4px; border-radius: 8px; backdrop-filter: blur(5px);
+            position: absolute; top: -110px; width: 96%; text-align: center;
+            background: rgba(10, 17, 24, 0.9); border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 3px; border-radius: 8px; backdrop-filter: blur(5px);
         }
-        .podium-crown { font-size: 28px; line-height: 1; margin-bottom: 2px; }
-        .podium-team-name { font-size: 16px; font-weight: bold; color: #fff; text-shadow: 0 0 8px rgba(0,0,0,0.8); }
+        .podium-crown { font-size: 24px; line-height: 1; margin-bottom: 2px; }
+        .podium-team-name { font-size: 14px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .podium-group-tag { font-size: 11px; color: #00ffcc; margin-top: 2px; }
-        .podium-score { font-size: 13px; color: #ffd700; font-weight: bold; margin-top: 2px; }
-        .podium-rank-num { font-size: 42px; font-weight: 900; color: rgba(255,255,255,0.3); }
+        .podium-score { font-size: 12px; color: #ffd700; font-weight: bold; margin-top: 2px; }
+        .podium-rank-num { font-size: 36px; font-weight: 900; color: rgba(255,255,255,0.3); }
 
         .answer-setting-row {
             display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
@@ -214,7 +208,6 @@
 
     <canvas id="confetti-canvas"></canvas>
 
-    <!-- 🖼️ 顶部三栏结构（左校徽 - 中标题 - 右口号） -->
     <div class="teacher-top-header-wrapper">
         <img src="image/image1.jpg" alt="居銮中华中学校徽" class="header-logo">
         <div class="header-title-box">
@@ -242,7 +235,7 @@
             <button class="btn-ctrl btn-stage1" id="btn-start-s1" onclick="startStage1()">🚀 启动阶段一 (开始比赛)</button>
             <button class="btn-ctrl btn-stage2" id="btn-start-s2" onclick="startStage2()" disabled>🧪 启动阶段二统一答题</button>
             <button class="btn-ctrl btn-end" id="btn-end-round" onclick="endCurrentRound()">🏁 结束本轮比赛</button>
-            <button class="btn-ctrl btn-ceremony" id="btn-ceremony" onclick="openCeremonyModal()">🏆 颁奖盛典 (成绩检视)</button>
+            <button class="btn-ctrl btn-ceremony" id="btn-ceremony" onclick="openCeremonyModal()">🏆 颁奖盛典 (前五名)</button>
         </div>
 
         <div class="registered-box">
@@ -311,14 +304,25 @@
         </div>
     </div>
 
-    <!-- 3. 颁奖盛典弹窗 -->
+    <!-- 3. 颁奖盛典弹窗 (前五名展示) -->
     <div class="overlay" id="ceremony-modal" style="display:none;">
         <div class="podium-modal">
-            <h2 style="color:#ffd700; font-size:28px; margin:0; text-shadow:0 0 15px rgba(255,215,0,0.6);">🎉 第 <span id="podium-round-num">1</span> 轮 · 荣耀颁奖台 🎉</h2>
-            <p style="color:#a0b0c0; font-size:13px; margin-top:5px;">热烈祝贺本轮表现最出色的特工小队！</p>
+            <h2 style="color:#ffd700; font-size:28px; margin:0; text-shadow:0 0 15px rgba(255,215,0,0.6);">🎉 第 <span id="podium-round-num">1</span> 轮 · 荣耀颁奖台 (Top 5) 🎉</h2>
+            <p style="color:#a0b0c0; font-size:13px; margin-top:5px;">热烈祝贺本轮表现最出色的前五支特工小队！</p>
 
             <div class="podium-stage">
-                <!-- 亚军 -->
+                <!-- 第 4 名 -->
+                <div class="podium-step step-4">
+                    <div class="podium-card" id="card-rank-4">
+                        <div class="podium-crown">🏅</div>
+                        <div class="podium-team-name" id="name-rank-4">虚位以待</div>
+                        <div class="podium-group-tag" id="group-rank-4">-</div>
+                        <div class="podium-score" id="score-rank-4">-</div>
+                    </div>
+                    <div class="podium-rank-num">4</div>
+                </div>
+
+                <!-- 亚军 (第 2 名) -->
                 <div class="podium-step step-2">
                     <div class="podium-card" id="card-rank-2">
                         <div class="podium-crown">🥈</div>
@@ -329,18 +333,18 @@
                     <div class="podium-rank-num">2</div>
                 </div>
 
-                <!-- 冠军 -->
+                <!-- 冠军 (第 1 名) -->
                 <div class="podium-step step-1">
                     <div class="podium-card" id="card-rank-1" style="border-color:#ffd700; box-shadow:0 0 15px rgba(255,215,0,0.3);">
                         <div class="podium-crown">🥇</div>
-                        <div class="podium-team-name" id="name-rank-1" style="color:#ffd700; font-size:18px;">虚位以待</div>
+                        <div class="podium-team-name" id="name-rank-1" style="color:#ffd700; font-size:16px;">虚位以待</div>
                         <div class="podium-group-tag" id="group-rank-1">-</div>
                         <div class="podium-score" id="score-rank-1">-</div>
                     </div>
                     <div class="podium-rank-num" style="color:rgba(255,215,0,0.4);">1</div>
                 </div>
 
-                <!-- 季军 -->
+                <!-- 季军 (第 3 名) -->
                 <div class="podium-step step-3">
                     <div class="podium-card" id="card-rank-3">
                         <div class="podium-crown">🥉</div>
@@ -349,6 +353,17 @@
                         <div class="podium-score" id="score-rank-3">-</div>
                     </div>
                     <div class="podium-rank-num">3</div>
+                </div>
+
+                <!-- 第 5 名 -->
+                <div class="podium-step step-5">
+                    <div class="podium-card" id="card-rank-5">
+                        <div class="podium-crown">🎗️</div>
+                        <div class="podium-team-name" id="name-rank-5">虚位以待</div>
+                        <div class="podium-group-tag" id="group-rank-5">-</div>
+                        <div class="podium-score" id="score-rank-5">-</div>
+                    </div>
+                    <div class="podium-rank-num">5</div>
                 </div>
             </div>
 
@@ -375,7 +390,6 @@
 
     var currentRoundId = '1';
 
-    // 🛡️ 方案 A 掩码加密工具函数
     var OPTION_MAP = { '强酸性': 1, '弱酸性': 2, '中性': 3, '弱碱性': 4, '强碱性': 5 };
     var CODE_TO_OPTION = { 1: '强酸性', 2: '弱酸性', 3: '中性', 4: '弱碱性', 5: '强碱性' };
 
@@ -390,7 +404,6 @@
         return CODE_TO_OPTION[code] || '中性';
     }
 
-    // 默认参考答案（以加密数值存储）
     var defaultAnswers = { 
         'A': encryptAns('强酸性'), 
         'B': encryptAns('弱酸性'), 
@@ -399,7 +412,7 @@
         'E': encryptAns('强碱性') 
     };
     var currentAnswers = { ...defaultAnswers };
-    var currentInspectingGroup = null;
+    var currentInspectingKey = null;
 
     function initRounds() {
         db.ref('rounds_list').on('value', (snap) => {
@@ -554,7 +567,7 @@
                     <th>组别</th>
                     <th>小队名称</th>
                     <th>阶段一纯用时</th>
-                    <th>罚时判定 (>60s)</th>
+                    <th>罚时判定 (>5分钟)</th>
                 </tr>
             `;
 
@@ -599,7 +612,8 @@
             `;
 
             db.ref(`rounds/${currentRoundId}/leaderboard`).on('value', snap => {
-                var data = Object.values(snap.val() || {});
+                var rawObj = snap.val() || {};
+                var data = Object.keys(rawObj).map(k => ({ key: k, ...rawObj[k] }));
                 data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
                 tbody.innerHTML = '';
@@ -629,7 +643,7 @@
                             <td>${detailsHtml}</td>
                             <td style="font-family:monospace; color:#00ffcc; font-weight:bold;">${item.time_used}</td>
                             <td>${penStatus}</td>
-                            <td><button class="btn-inspect" onclick="openInspectModal('${item.group}')">👁️ 检视/重算</button></td>
+                            <td><button class="btn-inspect" onclick="openInspectModal('${item.key}')">👁️ 检视/重算</button></td>
                         </tr>
                     `;
                 });
@@ -689,9 +703,9 @@
     }
 
     // --- 检视与重算逻辑 ---
-    function openInspectModal(groupKey) {
-        currentInspectingGroup = groupKey;
-        db.ref(`rounds/${currentRoundId}/leaderboard/${groupKey}`).once('value', snap => {
+    function openInspectModal(key) {
+        currentInspectingKey = key;
+        db.ref(`rounds/${currentRoundId}/leaderboard/${key}`).once('value', snap => {
             var item = snap.val();
             if (!item) return;
 
@@ -730,8 +744,8 @@
     }
 
     function recalculateSingleGroup() {
-        if (!currentInspectingGroup) return;
-        db.ref(`rounds/${currentRoundId}/leaderboard/${currentInspectingGroup}`).once('value', snap => {
+        if (!currentInspectingKey) return;
+        db.ref(`rounds/${currentRoundId}/leaderboard/${currentInspectingKey}`).once('value', snap => {
             var item = snap.val();
             if (!item) return;
 
@@ -752,17 +766,17 @@
             });
 
             item.score = recalculatedScore;
-            db.ref(`rounds/${currentRoundId}/leaderboard/${currentInspectingGroup}`).set(item);
-            alert(`✅ 重算完成！组别 ${currentInspectingGroup} 最新得分为：${recalculatedScore} 分`);
-            openInspectModal(currentInspectingGroup);
+            db.ref(`rounds/${currentRoundId}/leaderboard/${currentInspectingKey}`).set(item);
+            alert(`✅ 重算完成！该组最新得分为：${recalculatedScore} 分`);
+            openInspectModal(currentInspectingKey);
         });
     }
 
     function recalculateAllLeaderboard() {
         db.ref(`rounds/${currentRoundId}/leaderboard`).once('value', snap => {
             var dataObj = snap.val() || {};
-            Object.keys(dataObj).forEach(gKey => {
-                var item = dataObj[gKey];
+            Object.keys(dataObj).forEach(key => {
+                var item = dataObj[key];
                 var newTotal = 0;
                 ['A', 'B', 'C', 'D', 'E'].forEach(k => {
                     if (item.details && item.details[k]) {
@@ -779,20 +793,20 @@
                     }
                 });
                 item.score = newTotal;
-                db.ref(`rounds/${currentRoundId}/leaderboard/${gKey}`).set(item);
+                db.ref(`rounds/${currentRoundId}/leaderboard/${key}`).set(item);
             });
             alert("🎉 全班成绩已根据最新标准答案成功完成重新批阅！");
         });
     }
 
-    // --- 颁奖仪式 ---
+    // --- 颁奖仪式 (Top 5 呈现) ---
     function openCeremonyModal() {
         document.getElementById('podium-round-num').innerText = currentRoundId;
         db.ref(`rounds/${currentRoundId}/leaderboard`).once('value', snap => {
             var data = Object.values(snap.val() || {});
             data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
-            for (var i = 1; i <= 3; i++) {
+            for (var i = 1; i <= 5; i++) {
                 var item = data[i - 1];
                 var nameEl = document.getElementById('name-rank-' + i);
                 var groupEl = document.getElementById('group-rank-' + i);
@@ -801,8 +815,8 @@
                 if (item) {
                     nameEl.innerText = item.team;
                     groupEl.innerText = item.group;
-                    var penExtra = item.hasPenalty ? ' <span style="color:#ff4a4a; font-size:10px;">(含30s罚时)</span>' : '';
-                    scoreEl.innerHTML = item.score + " 分 (" + item.time_used + ")" + penExtra;
+                    var penExtra = item.hasPenalty ? ' <span style="color:#ff4a4a; font-size:10px;">(+30s)</span>' : '';
+                    scoreEl.innerHTML = item.score + "分 (" + item.time_used + ")" + penExtra;
                 } else {
                     nameEl.innerText = "虚位以待";
                     groupEl.innerText = "-";
