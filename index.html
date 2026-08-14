@@ -538,9 +538,12 @@
         if (btnEl) btnEl.classList.add('selected');
     }
 
-    // 🔧 修复并增强 openEditModal
     function openEditModal() {
-        document.getElementById('waiting-modal').style.display = 'none'; // 隐藏等待弹窗
+        if (isStage2Started) {
+            alert("⚠️ 阶段二实战已经开启，不允许修改小队信息！");
+            return;
+        }
+        document.getElementById('waiting-modal').style.display = 'none';
         document.getElementById('reg-modal-title').innerText = "✏️ 修改特工小组信息";
         document.getElementById('btn-cancel-edit').style.display = "block";
         document.getElementById('team-name-input').value = teamName || '';
@@ -566,47 +569,82 @@
         }
     }
 
-    // 登记并校验云端 PIN 码
+    // 🛡️ 注册与校验：禁止重复组别/队名 + 阶段二后禁止加入
     function registerTeam() {
         db.ref('current_round_id').once('value', (snap) => {
             currentRoundId = snap.val() || '1';
             
-            db.ref(`rounds/${currentRoundId}/pin`).once('value', (pinSnap) => {
-                var correctPin = pinSnap.val() || '5829';
-                var userPin = document.getElementById('pin-code-input').value.trim();
-
-                if (!userPin) { alert("请输入现场大屏幕显示的 PIN 码！"); return; }
-                if (userPin !== correctPin) { alert("❌ PIN 码错误！请输入现场大屏幕显示的 4 位数字 PIN 码。"); return; }
-                if (!selectedGroup) { alert("请点击图中的实验室桌位（如：第 1 组）！"); return; }
-
-                var tInput = document.getElementById('team-name-input');
-                var tName = tInput.value.trim();
-                if(!tName) { alert("请输入小队名称！"); return; }
-                if(tName.length > 10) { alert("小队名称不能超过10个字符！"); return; }
-                
-                groupName = selectedGroup;
-                teamName = tName;
-
-                document.getElementById('register-modal').style.display = 'none';
-                if (!isStage1Started) {
-                    document.getElementById('waiting-modal').style.display = 'flex';
+            // 1. 检查老师是否已经启动阶段二或结束比赛 (防作弊)
+            db.ref(`rounds/${currentRoundId}/room_state`).once('value', (stateSnap) => {
+                var rState = stateSnap.val() || { status: 'waiting' };
+                if (rState.status === 'stage2' || rState.status === 'ended' || rState.stage2_started) {
+                    alert("🚫 无法加入：老师已经开启【第二阶段实战】或本轮已结束，现已锁定注册入口，禁止新队伍中途加入！");
+                    return;
                 }
-                document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
-                document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
 
-                // 同步数据到云端 (以 mySessionId 为主键，防止覆盖)
-                db.ref(`rounds/${currentRoundId}/registered_teams/${mySessionId}`).set({
-                    sessionId: mySessionId,
-                    group: groupName,
-                    team: teamName,
-                    regTime: new Date().toLocaleTimeString()
+                // 2. 校验 PIN 码
+                db.ref(`rounds/${currentRoundId}/pin`).once('value', (pinSnap) => {
+                    var correctPin = pinSnap.val() || '5829';
+                    var userPin = document.getElementById('pin-code-input').value.trim();
+
+                    if (!userPin) { alert("请输入现场大屏幕显示的 PIN 码！"); return; }
+                    if (userPin !== correctPin) { alert("❌ PIN 码错误！请输入现场大屏幕显示的 4 位数字 PIN 码。"); return; }
+                    if (!selectedGroup) { alert("请点击图中的实验室桌位（如：第 1 组）！"); return; }
+
+                    var tInput = document.getElementById('team-name-input');
+                    var tName = tInput.value.trim();
+                    if(!tName) { alert("请输入小队名称！"); return; }
+                    if(tName.length > 10) { alert("小队名称不能超过10个字符！"); return; }
+
+                    // 3. 🛡️ 查重校验：检查组别 (selectedGroup) 和队名 (tName) 是否已被其他同学占用
+                    db.ref(`rounds/${currentRoundId}/registered_teams`).once('value', (regSnap) => {
+                        var regMap = regSnap.val() || {};
+                        var isGroupDuplicate = false;
+                        var isTeamDuplicate = false;
+
+                        Object.keys(regMap).forEach(k => {
+                            // 排除自身修改
+                            if (k !== mySessionId) {
+                                var item = regMap[k];
+                                if (item.group === selectedGroup) isGroupDuplicate = true;
+                                if (item.team.toLowerCase() === tName.toLowerCase()) isTeamDuplicate = true;
+                            }
+                        });
+
+                        if (isGroupDuplicate) {
+                            alert(`❌ 登记失败：【${selectedGroup}】已被其他同学选定！请选择未被占用的组别桌位。`);
+                            return;
+                        }
+                        if (isTeamDuplicate) {
+                            alert(`❌ 登记失败：小队名称【${tName}】已被其他队伍使用，请换一个独特的队名！`);
+                            return;
+                        }
+                        
+                        groupName = selectedGroup;
+                        teamName = tName;
+
+                        document.getElementById('register-modal').style.display = 'none';
+                        if (!isStage1Started) {
+                            document.getElementById('waiting-modal').style.display = 'flex';
+                        }
+                        document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
+                        document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
+
+                        // 保存注册信息
+                        db.ref(`rounds/${currentRoundId}/registered_teams/${mySessionId}`).set({
+                            sessionId: mySessionId,
+                            group: groupName,
+                            team: teamName,
+                            regTime: new Date().toLocaleTimeString()
+                        });
+
+                        if (isStage1Finished) submitStage1Result();
+                        if (isMissionFinished) finishMission(false, true);
+
+                        renderStage2Cards();
+                        listenGlobalSignal();
+                    });
                 });
-
-                if (isStage1Finished) submitStage1Result();
-                if (isMissionFinished) finishMission(false, true);
-
-                renderStage2Cards();
-                listenGlobalSignal();
             });
         });
     }
@@ -636,6 +674,9 @@
             }
 
             if (roomState.stage2_started && !isStage2Started) {
+                // 阶段二开启后，隐藏顶部的“修改”按钮，避免作弊
+                var topEditBtn = document.getElementById('btn-top-edit');
+                if (topEditBtn) topEditBtn.style.display = 'none';
                 unlockStage2Controls(roomState.stage2_time);
             }
         });
