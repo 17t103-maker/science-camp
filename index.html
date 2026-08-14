@@ -29,7 +29,6 @@
             padding: 20px; border-radius: 12px; box-shadow: 0 0 25px rgba(0,0,0,0.5);
         }
 
-        /* 🖼️ 响应式 Header 顶部布局（左右 Logo，中间标题） */
         .top-header-wrapper {
             display: flex;
             align-items: center;
@@ -40,26 +39,25 @@
             border-bottom: 1px solid rgba(0, 255, 204, 0.2);
         }
         .header-logo {
-            height: 55px; /* 电脑端标准高度 */
+            height: 55px;
             width: auto;
             max-width: 140px;
             object-fit: contain;
             filter: drop-shadow(0 0 5px rgba(0, 255, 204, 0.3));
-            flex-shrink: 0; /* 防止被标题挤压变形 */
+            flex-shrink: 0;
         }
         .header-title-box {
             flex: 1;
             text-align: center;
         }
 
-        /* 📱 手机端适配 (屏幕宽度 < 600px) */
         @media (max-width: 600px) {
             .header-logo {
-                height: 40px; /* 手机端自动缩小高度 */
+                height: 40px;
                 max-width: 90px;
             }
             h1 {
-                font-size: 18px !important; /* 手机端标题适当缩小 */
+                font-size: 18px !important;
             }
         }
 
@@ -96,6 +94,20 @@
         .btn-action:disabled { opacity: 0.4; cursor: not-allowed; border-color: #555; }
         .btn-capture { background: var(--primary); color: #0a1118; border: none; }
         .btn-capture:hover:not(:disabled) { background: #00cc99; box-shadow: 0 0 15px var(--primary); }
+        
+        .btn-skip {
+            background: rgba(255, 74, 74, 0.15);
+            border: 1px solid #ff4a4a;
+            color: #ff9999;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .btn-skip:hover:not(:disabled) { background: rgba(255, 74, 74, 0.3); color: #fff; }
+
         .btn-verify-single {
             background: rgba(0,255,204,0.2); border: 1px solid var(--primary); color: #fff;
             padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;
@@ -261,10 +273,10 @@
 </head>
 <body>
 
-<!-- 1. 注册弹窗 -->
+<!-- 1. 注册与修改信息弹窗 -->
 <div class="overlay" id="register-modal">
     <div class="modal-box">
-        <h2 style="margin-top:0;">🏷️ 特工小组身份登记</h2>
+        <h2 style="margin-top:0;" id="reg-modal-title">🏷️ 特工小组身份登记</h2>
         <p style="font-size:12px; color:#a0b0c0; margin-bottom:12px;">请输入大屏幕上的 PIN 码，点击对应实验台位置并输入小队名！</p>
         
         <div class="form-group">
@@ -295,7 +307,10 @@
             <label>请输入小队名称 (最多10字)：</label>
             <input type="text" class="form-control" id="team-name-input" maxlength="10" placeholder="例：破译先锋队">
         </div>
-        <button class="btn-action btn-capture" onclick="registerTeam()">🚀 验证并提交登记</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-action btn-capture" onclick="registerTeam()">🚀 验证并提交登记</button>
+            <button class="btn-action" id="btn-cancel-edit" onclick="cancelEditModal()" style="display:none; width:auto; padding:0 20px;">取消</button>
+        </div>
     </div>
 </div>
 
@@ -308,13 +323,17 @@
             <span class="waiting-badge" style="font-size:14px; padding:8px 16px;">正在等待老师统一启动阶段一...</span>
         </div>
         <p style="font-size:12px; color:#a0b0c0;">请抬头看现场大屏幕，老师按下启动后将自动开始任务！</p>
+        <button onclick="openEditModal()" style="background:rgba(255,255,255,0.1); border:1px solid #ffd700; color:#ffd700; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px; margin-top:10px;">✏️ 组别/队名填错了？点此修改</button>
     </div>
 </div>
 
 <!-- 顶部状态栏 -->
 <div class="container" style="padding:10px 20px; display:none;" id="status-bar-container">
     <div class="team-bar" style="margin:0;">
-        <div>当前小队：<b id="display-team-info" style="color:#fff;">-</b></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span>当前小队：<b id="display-team-info" style="color:#fff;">-</b></span>
+            <button id="btn-top-edit" onclick="openEditModal()" style="background:none; border:1px solid rgba(0,255,204,0.4); color:#00ffcc; font-size:11px; padding:2px 6px; border-radius:3px; cursor:pointer;">✏️ 修改</button>
+        </div>
         <div>🧪 阶段一：<b id="timer-stage1-display" style="color:#00ffcc; font-family:monospace; font-size:18px;">00:00</b></div>
         <div>🔬 阶段二：<b id="timer-stage2-display" style="color:#ffd700; font-family:monospace; font-size:18px;">00:00</b></div>
         <div>积分：<b id="score-display" style="color:var(--accent-gold); font-size:18px;">0</b> / 10</div>
@@ -324,7 +343,6 @@
 <!-- 阶段一 界面 -->
 <div class="container" id="stage1-app">
     <header>
-        <!-- 🖼️ 顶部三栏一体化结构（校徽 - 标题 - 口号） -->
         <div class="top-header-wrapper">
             <img src="image/image1.jpg" alt="居銮中华中学校徽" class="header-logo">
             <div class="header-title-box">
@@ -334,7 +352,7 @@
         </div>
 
         <div class="mission-brief">
-            <b>🕵️ 特工指令：</b>连续加酸/加碱（满3滴变色）收集齐 pH 2-11 的 10 种标准色谱。<b>⚠️ 注意：第一阶段超过 1 分钟未完成，阶段二将增加 30 秒罚时！</b>
+            <b>🕵️ 特工指令：</b>连续加酸/加碱（满3滴变色）收集齐 pH 2-11 的 10 种标准色谱。<b>⚠️ 注意：第一阶段操作超过 5 分钟 (300秒) 未完成，阶段二将追加 30 秒超时罚时！若遇到困难可选择提前结算进入阶段二。</b>
         </div>
     </header>
 
@@ -350,6 +368,7 @@
             <div class="ph-gauge">pH <span id="ph-val">7</span></div>
             <button class="btn-action" id="btn-alkali" onclick="triggerDrip(1)" disabled>🧪 持续滴入碱性物质 (pH ↑)</button>
             <button class="btn-action btn-capture" id="btn-capture" onclick="captureColor()" disabled>📸 捕获当前 pH 颜色数据</button>
+            <button class="btn-skip" id="btn-skip-s1" onclick="skipStage1()" disabled>⏭️ 放弃剩余标定，直接结算并进入阶段二 (视为超时)</button>
         </div>
 
         <div class="visual-panel">
@@ -397,7 +416,7 @@
 <!-- 4. 阶段一完成弹窗 (排名榜) -->
 <div class="overlay" id="win-overlay" style="display:none;">
     <div class="modal-box">
-        <h2 style="color:var(--primary); margin-top:0;">🌈 阶段一色谱标定成功！</h2>
+        <h2 style="color:var(--primary); margin-top:0;" id="stage1-finish-title">🌈 阶段一色谱标定成功！</h2>
         <div id="penalty-notice-box" style="font-size:13px; margin:10px 0; padding:8px; border-radius:6px;"></div>
 
         <h3 style="color:var(--accent-gold); font-size:14px; margin:10px 0 5px 0; text-align:left;">⏱️ 阶段一各组即时排名：</h3>
@@ -462,6 +481,17 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // 🆔 产生唯一的客户端 Device/Session ID，杜绝同组名相互覆盖
+    function getSessionId() {
+        var sid = localStorage.getItem('sci_camp_session_id');
+        if (!sid) {
+            sid = 'sid_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            localStorage.setItem('sci_camp_session_id', sid);
+        }
+        return sid;
+    }
+    const mySessionId = getSessionId();
+
     var selectedGroup = "";
     var groupName = "", teamName = "";
     var currentRoundId = '1';
@@ -485,10 +515,7 @@
         10: { hex: '#66ff66', desc: '翠绿色 (碱性)' }, 11: { hex: '#ccff33', desc: '黄绿色 (强碱性)' }
     };
 
-    // 🛡️ 方案 A 映射规则：选项 -> Code
     var OPTION_MAP = { '强酸性': 1, '弱酸性': 2, '中性': 3, '弱碱性': 4, '强碱性': 5 };
-
-    // 🛡️ 默认加密参考答案 (Encrypted = Code * 7 + 13)
     var stage2Answers = { 'A': 20, 'B': 27, 'C': 34, 'D': 41, 'E': 48 };
     
     var sampleState = {
@@ -509,10 +536,33 @@
         selectedGroup = groupStr;
         var allButtons = document.querySelectorAll('.seat-btn');
         allButtons.forEach(b => b.classList.remove('selected'));
-        btnEl.classList.add('selected');
+        if (btnEl) btnEl.classList.add('selected');
     }
 
-    // 登记并校验云端 PIN 码
+    // 打开修改身份弹窗
+    function openEditModal() {
+        document.getElementById('reg-modal-title').innerText = "✏️ 修改特工小组信息";
+        document.getElementById('btn-cancel-edit').style.display = "block";
+        document.getElementById('team-name-input').value = teamName;
+        
+        // 选中之前的座位
+        var allButtons = document.querySelectorAll('.seat-btn');
+        allButtons.forEach(b => {
+            if (b.innerText.trim() === groupName) {
+                b.classList.add('selected');
+                selectedGroup = groupName;
+            } else {
+                b.classList.remove('selected');
+            }
+        });
+        document.getElementById('register-modal').style.display = 'flex';
+    }
+
+    function cancelEditModal() {
+        document.getElementById('register-modal').style.display = 'none';
+    }
+
+    // 登记并校验云端 PIN 码（允许重复登记，以 session_id 为区分）
     function registerTeam() {
         db.ref('current_round_id').once('value', (snap) => {
             currentRoundId = snap.val() || '1';
@@ -534,14 +584,23 @@
                 teamName = tName;
 
                 document.getElementById('register-modal').style.display = 'none';
-                document.getElementById('waiting-modal').style.display = 'flex';
+                if (!isStage1Started) {
+                    document.getElementById('waiting-modal').style.display = 'flex';
+                }
                 document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
                 document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
 
-                // 同步数据到云端
-                db.ref(`rounds/${currentRoundId}/registered_teams/${groupName}`).set({
-                    group: groupName, team: teamName, regTime: new Date().toLocaleTimeString()
+                // 同步数据到云端 (以 mySessionId 为主键，防止覆盖)
+                db.ref(`rounds/${currentRoundId}/registered_teams/${mySessionId}`).set({
+                    sessionId: mySessionId,
+                    group: groupName,
+                    team: teamName,
+                    regTime: new Date().toLocaleTimeString()
                 });
+
+                // 如果已经在答题中修改了信息，同步刷新结果库
+                if (isStage1Finished) submitStage1Result();
+                if (isMissionFinished) finishMission(false, true);
 
                 renderStage2Cards();
                 listenGlobalSignal();
@@ -549,19 +608,15 @@
         });
     }
 
-    // Firebase 实时监听广播信号与标准答案
+    // 实时监听
     function listenGlobalSignal() {
         if (!teamName) return;
 
-        // 0. 监听老师端设置的动态密文答案
         db.ref(`rounds/${currentRoundId}/answers`).on('value', (snap) => {
             var cloudAns = snap.val();
-            if (cloudAns) {
-                stage2Answers = cloudAns;
-            }
+            if (cloudAns) stage2Answers = cloudAns;
         });
 
-        // 1. 监听游戏房间状态变化
         db.ref(`rounds/${currentRoundId}/room_state`).on('value', (snapshot) => {
             var roomState = snapshot.val() || {};
 
@@ -570,8 +625,6 @@
                 if (!isMissionFinished) {
                     alert('📢 老师已宣布本轮比赛结束！系统已自动为您结算当前成绩。');
                     finishMission(true);
-                } else {
-                    alert('📢 老师已宣布本轮比赛结束！');
                 }
                 return;
             }
@@ -585,7 +638,6 @@
             }
         });
 
-        // 2. 实时监听全班成绩榜单
         db.ref(`rounds/${currentRoundId}/stage1_results`).on('value', (snap) => {
             if (isStage1Finished) renderStage1Leaderboard(snap.val() || {});
         });
@@ -603,6 +655,7 @@
         document.getElementById('btn-acid').disabled = false;
         document.getElementById('btn-alkali').disabled = false;
         document.getElementById('btn-capture').disabled = false;
+        document.getElementById('btn-skip-s1').disabled = false;
 
         stage1StartTime = startTimeStr ? new Date(startTimeStr) : new Date();
         if (stage1Timer) clearInterval(stage1Timer);
@@ -684,45 +737,57 @@
             slot.style.borderColor = '#00ffcc';
         }
         if(capturedpHs.size === 10 && !isStage1Finished) {
-            isStage1Finished = true;
-            clearInterval(stage1Timer);
-            document.getElementById('btn-acid').disabled = true;
-            document.getElementById('btn-alkali').disabled = true;
-            document.getElementById('btn-capture').disabled = true;
-
-            hasPenalty = stage1Seconds > 60;
-            submitStage1Result();
-
-            var alertBox = document.getElementById('penalty-alert-box');
-            var alertTitle = document.getElementById('penalty-alert-title');
-            var alertContent = document.getElementById('penalty-alert-content');
-
-            if (hasPenalty) {
-                alertBox.style.borderColor = "#ff4a4a";
-                alertTitle.style.color = "#ff4a4a";
-                alertTitle.innerText = "⚠️ 第一阶段超时警告通知！";
-                alertContent.innerHTML = `
-                    <b>小队名称：</b>${groupName} - ${teamName}<br>
-                    <b>阶段一纯用时：</b><span style="color:#ff4a4a; font-weight:bold; font-family:monospace;">${fmtTime(stage1Seconds)}</span> (超过 60 秒上限)<br><br>
-                    🚨 <b>惩罚规则生效：</b><br>
-                    由于本阶段未能在一分钟内完成标定，系统已自动触发处罚机制，将在<b>第二阶段最终用时中追加 30 秒罚时 (+30s)</b>！
-                `;
-            } else {
-                alertBox.style.borderColor = "#00ffcc";
-                alertTitle.style.color = "#00ffcc";
-                alertTitle.innerText = "⚡ 第一阶段神速通关！";
-                alertContent.innerHTML = `
-                    <b>小队名称：</b>${groupName} - ${teamName}<br>
-                    <b>阶段一纯用时：</b><span style="color:#00ffcc; font-weight:bold; font-family:monospace;">${fmtTime(stage1Seconds)}</span> (在 60 秒以内完成)<br><br>
-                    🎉 <b>表现优异：</b><br>
-                    恭喜特工小队！您在规定时间内完美标定花青素色谱线，<b>无任何追加罚时</b>，请再接再厉！
-                `;
-            }
-
-            setTimeout(function() { 
-                document.getElementById('penalty-alert-modal').style.display = 'flex'; 
-            }, 300);
+            completeStage1(false);
         }
+    }
+
+    // 提前跳过/未完成阶段一
+    function skipStage1() {
+        if (!confirm("⚠️ 确定要提前结算并进入阶段二吗？\n提前结束将自动被判定为【超时】并在阶段二追加 30 秒罚时！")) return;
+        completeStage1(true);
+    }
+
+    function completeStage1(isSkipped) {
+        isStage1Finished = true;
+        clearInterval(stage1Timer);
+        document.getElementById('btn-acid').disabled = true;
+        document.getElementById('btn-alkali').disabled = true;
+        document.getElementById('btn-capture').disabled = true;
+        document.getElementById('btn-skip-s1').disabled = true;
+
+        // ⏱️ 修改规则：大于 5 分钟 (300 秒) 或提前放弃均视为超时罚时
+        hasPenalty = isSkipped || (stage1Seconds > 300);
+        submitStage1Result();
+
+        var alertBox = document.getElementById('penalty-alert-box');
+        var alertTitle = document.getElementById('penalty-alert-title');
+        var alertContent = document.getElementById('penalty-alert-content');
+
+        if (hasPenalty) {
+            alertBox.style.borderColor = "#ff4a4a";
+            alertTitle.style.color = "#ff4a4a";
+            alertTitle.innerText = isSkipped ? "⚠️ 提前结束阶段一 (超时罚时)" : "⚠️ 第一阶段超时警告通知！";
+            alertContent.innerHTML = `
+                <b>小队名称：</b>${groupName} - ${teamName}<br>
+                <b>阶段一用时：</b><span style="color:#ff4a4a; font-weight:bold; font-family:monospace;">${fmtTime(stage1Seconds)}</span> ${isSkipped ? '(中途结算)' : '(超过 5 分钟上限)'}<br><br>
+                🚨 <b>惩罚规则生效：</b><br>
+                系统已自动触发处罚机制，将在<b>第二阶段最终用时中追加 30 秒罚时 (+30s)</b>！
+            `;
+        } else {
+            alertBox.style.borderColor = "#00ffcc";
+            alertTitle.style.color = "#00ffcc";
+            alertTitle.innerText = "⚡ 第一阶段神速通关！";
+            alertContent.innerHTML = `
+                <b>小队名称：</b>${groupName} - ${teamName}<br>
+                <b>阶段一纯用时：</b><span style="color:#00ffcc; font-weight:bold; font-family:monospace;">${fmtTime(stage1Seconds)}</span> (在 5 分钟以内完成)<br><br>
+                🎉 <b>表现优异：</b><br>
+                恭喜特工小队！您在规定时间内完美标定花青素色谱线，<b>无任何追加罚时</b>，请再接再厉！
+            `;
+        }
+
+        setTimeout(function() { 
+            document.getElementById('penalty-alert-modal').style.display = 'flex'; 
+        }, 300);
     }
 
     function closePenaltyAlertModal() {
@@ -745,13 +810,14 @@
 
     function submitStage1Result() {
         var payload = {
+            sessionId: mySessionId,
             group: groupName,
             team: teamName,
             time_s1: fmtTime(stage1Seconds),
             s1_seconds: stage1Seconds,
             hasPenalty: hasPenalty
         };
-        db.ref(`rounds/${currentRoundId}/stage1_results/${groupName}`).set(payload);
+        db.ref(`rounds/${currentRoundId}/stage1_results/${mySessionId}`).set(payload);
     }
 
     function renderStage1Leaderboard(dataObj) {
@@ -761,7 +827,7 @@
         var tbody = document.getElementById('stage1-leaderboard-body');
         tbody.innerHTML = '';
         list.forEach((item, index) => {
-            var isMy = (item.group === groupName && item.team === teamName);
+            var isMy = (item.sessionId === mySessionId);
             var rank = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
             var penTag = item.hasPenalty ? '<span class="penalty-tag">(+30s 罚时)</span>' : '<span style="color:#00ffcc;font-size:10px;">合格</span>';
             tbody.innerHTML += `
@@ -833,7 +899,6 @@
         }, 1000);
     }
 
-    // 🛡️ 防作弊：加密验证逻辑
     function verifySingle(key) {
         var state = sampleState[key];
         if (state.solved || state.attempts >= 2) return;
@@ -848,11 +913,8 @@
         state.attempts++;
         state.userChoice = userVal;
 
-        // 🧮 转换为掩码密文
         var userCode = OPTION_MAP[userVal] || 0;
         var encryptedUserVal = userCode * 7 + 13;
-
-        // 🔍 密文比对
         var isCorrect = (encryptedUserVal === stage2Answers[key]) || (userVal === stage2Answers[key]);
 
         if (isCorrect) {
@@ -887,8 +949,8 @@
         }
     }
 
-    function finishMission(isForced = false) {
-        if (isMissionFinished) return;
+    function finishMission(isForced = false, isSilentUpdate = false) {
+        if (isMissionFinished && !isSilentUpdate) return;
         isMissionFinished = true;
         clearInterval(stage2Timer);
         
@@ -905,6 +967,7 @@
         document.getElementById('penalty-text-display').innerHTML = hasPenalty ? ' | <b class="penalty-tag">含30s超时罚时</b>' : '';
 
         var payload = {
+            sessionId: mySessionId,
             group: groupName,
             team: teamName,
             score: totalScore,
@@ -924,9 +987,11 @@
             timestamp: new Date().toISOString()
         };
 
-        db.ref(`rounds/${currentRoundId}/leaderboard/${groupName}`).set(payload);
+        db.ref(`rounds/${currentRoundId}/leaderboard/${mySessionId}`).set(payload);
 
-        document.getElementById('final-win-overlay').style.display = 'flex';
+        if (!isSilentUpdate) {
+            document.getElementById('final-win-overlay').style.display = 'flex';
+        }
     }
 
     function renderStudentLeaderboard(dataObj) {
@@ -937,7 +1002,7 @@
         tbody.innerHTML = '';
 
         data.forEach((item, index) => {
-            var isMyTeam = (item.group === groupName && item.team === teamName);
+            var isMyTeam = (item.sessionId === mySessionId);
             var rowClass = isMyTeam ? 'class="my-team-row"' : '';
             var rank = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
             
@@ -971,10 +1036,8 @@
         });
     }
 
-    // 🚫 防作弊：1. 禁用右键菜单
+    // 防作弊
     document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-
-    // 🚫 防作弊：2. 禁用 F12 及常规开发者工具快捷键
     document.addEventListener('keydown', function(e) {
         if (
             e.key === 'F12' ||
@@ -984,11 +1047,6 @@
             e.preventDefault();
         }
     });
-
-    // 🚫 防作弊：3. 开发者工具无限 Debugger 阻断
-    setInterval(function() {
-        (function() { return false; })['constructor']('debugger')['call']();
-    }, 1000);
 </script>
 </body>
 </html>
