@@ -86,12 +86,69 @@
             display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 12px;
         }
 
+        /* 10组固定席位网格样式 */
         .registered-box {
-            background: rgba(0, 0, 0, 0.2); border: 1px solid #334e68; border-radius: 6px; padding: 10px; margin-bottom: 15px; text-align: left;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid #334e68;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            text-align: left;
         }
-        .reg-tag {
-            display: inline-block; background: rgba(0,255,204,0.1); border: 1px solid #00ffcc;
-            color: #00ffcc; font-size: 12px; padding: 3px 8px; border-radius: 4px; margin: 3px;
+        .registered-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #a0b0c0;
+        }
+        .reg-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+        }
+        .reg-slot {
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+        .reg-slot.joined {
+            background: rgba(0, 255, 204, 0.12);
+            border: 1px solid #00ffcc;
+            color: #ffffff;
+            box-shadow: 0 0 8px rgba(0, 255, 204, 0.15);
+        }
+        .reg-slot.joined .slot-group {
+            color: #00ffcc;
+            font-weight: bold;
+        }
+        .reg-slot.joined .slot-team {
+            color: #ffd700;
+            font-weight: bold;
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right;
+        }
+        .reg-slot.empty {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            color: #667788;
+        }
+        .reg-slot.empty .slot-group {
+            color: #8899aa;
+        }
+        .reg-slot.empty .slot-team {
+            color: #ff4a4a;
+            font-size: 11px;
+            opacity: 0.7;
         }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
@@ -238,8 +295,11 @@
         </div>
 
         <div class="registered-box">
-            <span style="font-size:12px; color:#a0b0c0;">📌 本轮已登记小队 (<span id="reg-count">0</span>)：</span>
-            <div id="registered-teams-list" style="margin-top:5px;"></div>
+            <div class="registered-header">
+                <span>📌 <b>本轮特工小队席位登记状态</b>（共 10 组）：</span>
+                <span>已就绪：<b id="reg-count" style="color:#00ffcc; font-size:15px;">0</b> / 10 组</span>
+            </div>
+            <div class="reg-grid" id="registered-teams-list"></div>
         </div>
 
         <h3 id="table-title" style="color:#00ffcc; font-size:16px; text-align:left; margin:15px 0 5px 0;">📊 实时榜单：</h3>
@@ -537,19 +597,34 @@
             updateLeaderboard(state.status);
         });
 
+        // 监听组别登记 - 固定渲染第 1 组至第 10 组
         db.ref(`rounds/${currentRoundId}/registered_teams`).on('value', snap => {
             var data = snap.val() || {};
             var regs = Object.values(data);
-            document.getElementById('reg-count').innerText = regs.length;
-            var container = document.getElementById('registered-teams-list');
-            if (regs.length === 0) {
-                container.innerHTML = '<span style="font-size:12px; color:#666;">暂无小队登记</span>';
-                return;
-            }
-            container.innerHTML = '';
+            
+            var groupMap = {};
             regs.forEach(r => {
-                container.innerHTML += `<span class="reg-tag"><b>${r.group}</b>: ${r.team}</span>`;
+                var gKey = (r.group || '').replace(/\s+/g, '');
+                groupMap[gKey] = r.team;
             });
+
+            document.getElementById('reg-count').innerText = regs.length;
+
+            var container = document.getElementById('registered-teams-list');
+            container.innerHTML = '';
+
+            for (var i = 1; i <= 10; i++) {
+                var gName = `第${i}组`;
+                var isJoined = !!groupMap[gName];
+                var teamName = groupMap[gName] || "⏳ 待加入";
+
+                container.innerHTML += `
+                    <div class="reg-slot ${isJoined ? 'joined' : 'empty'}">
+                        <span class="slot-group">第 ${i} 组</span>
+                        <span class="slot-team">${teamName}</span>
+                    </div>
+                `;
+            }
         });
     }
 
