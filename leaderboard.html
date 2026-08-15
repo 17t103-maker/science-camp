@@ -60,8 +60,20 @@
         .round-btn {
             background: rgba(255,255,255,0.1); border: 1px solid #555; color: #ccc;
             padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;
+            transition: all 0.2s ease;
         }
-        .round-btn.active { background: #00ffcc; color: #0a1118; border-color: #00ffcc; box-shadow: 0 0 10px rgba(0,255,204,0.4); }
+        .round-btn:hover {
+            background: rgba(0, 255, 204, 0.2);
+            color: #fff;
+            border-color: #00ffcc;
+        }
+        .round-btn.active {
+            background: #00ffcc !important;
+            color: #0a1118 !important;
+            border-color: #00ffcc !important;
+            box-shadow: 0 0 15px rgba(0,255,204,0.7) !important;
+            font-weight: 900;
+        }
         .btn-new-round { background: #ffd700; color: #0a1118; border: none; font-weight: bold; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
 
         .board-container {
@@ -448,6 +460,7 @@
     const db = firebase.database();
 
     var currentRoundId = '1';
+    var cachedRoundsList = ["1"];
 
     var OPTION_MAP = { '强酸性': 1, '弱酸性': 2, '中性': 3, '弱碱性': 4, '强碱性': 5 };
     var CODE_TO_OPTION = { 1: '强酸性', 2: '弱酸性', 3: '中性', 4: '弱碱性', 5: '强碱性' };
@@ -475,12 +488,12 @@
 
     function initRounds() {
         db.ref('rounds_list').on('value', (snap) => {
-            var rounds = snap.val() || ["1"];
+            cachedRoundsList = snap.val() || ["1"];
             db.ref('current_round_id').once('value', (curSnap) => {
-                currentRoundId = curSnap.val() || rounds[rounds.length - 1];
+                currentRoundId = curSnap.val() || cachedRoundsList[cachedRoundsList.length - 1];
                 ensurePinExists(currentRoundId);
                 ensureAnswersExist(currentRoundId);
-                renderRoundButtons(rounds);
+                renderRoundButtons(cachedRoundsList);
                 listenCurrentRoundData();
             });
         });
@@ -520,16 +533,20 @@
         var container = document.getElementById('round-buttons-list');
         container.innerHTML = '';
         rounds.forEach(r => {
-            var activeClass = (r === currentRoundId) ? 'active' : '';
-            container.innerHTML += `<button class="round-btn ${activeClass}" onclick="switchRound('${r}')">第 ${r} 轮</button>`;
+            var activeClass = (String(r) === String(currentRoundId)) ? 'active' : '';
+            container.innerHTML += `<button id="btn-round-${r}" class="round-btn ${activeClass}" onclick="switchRound('${r}')">第 ${r} 轮</button>`;
         });
     }
 
     function switchRound(rId) {
-        currentRoundId = rId;
-        db.ref('current_round_id').set(rId);
-        ensurePinExists(rId);
-        ensureAnswersExist(rId);
+        currentRoundId = String(rId);
+        db.ref('current_round_id').set(currentRoundId);
+        
+        // 立即更新轮次按钮高亮
+        renderRoundButtons(cachedRoundsList);
+        
+        ensurePinExists(currentRoundId);
+        ensureAnswersExist(currentRoundId);
         listenCurrentRoundData();
     }
 
@@ -538,6 +555,7 @@
             var rounds = snap.val() || ["1"];
             var newId = String(parseInt(rounds[rounds.length - 1] || '0') + 1);
             rounds.push(newId);
+            cachedRoundsList = rounds;
             db.ref('rounds_list').set(rounds);
             switchRound(newId);
         });
