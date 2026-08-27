@@ -527,7 +527,7 @@
 
     var currentpH = 7, capturedpHs = new Set(), dripCount = 0, lastDirection = 0;
 
-    // 💾 本地持久化保存与恢复模块
+    // 💾 本地持久化保存与恢复模块（已绑定 roundId）
     function saveLocalProgress() {
         var state = {
             roundId: currentRoundId,
@@ -547,83 +547,119 @@
 
     function tryRestoreLocalProgress(rId) {
         var raw = localStorage.getItem('sci_camp_progress_' + rId);
-        if (!raw) return false;
+        if (!raw) {
+            resetClientForNewRound();
+            return false;
+        }
         try {
             var state = JSON.parse(raw);
-            if (state && state.teamName) {
-                groupName = state.groupName;
-                teamName = state.teamName;
-                selectedGroup = groupName;
-                isStage1Finished = state.isStage1Finished || false;
-                stage1Seconds = state.stage1Seconds || 0;
-                hasPenalty = state.hasPenalty || false;
-                totalScore = state.totalScore || 0;
-                completedCount = state.completedCount || 0;
-                isMissionFinished = state.isMissionFinished || false;
+            if (!state || state.roundId !== rId || !state.teamName) {
+                resetClientForNewRound();
+                return false;
+            }
 
-                if (state.capturedpHs) {
-                    capturedpHs = new Set(state.capturedpHs);
-                    capturedpHs.forEach(ph => {
-                        var data = phColors[ph];
-                        var block = document.getElementById('block-' + ph);
-                        var txt = document.getElementById('txt-' + ph);
-                        var slot = document.getElementById('slot-' + ph);
-                        if (block && txt && slot && data) {
-                            block.style.backgroundColor = data.hex;
-                            txt.innerText = "已锁定"; txt.style.color = '#00ffcc';
-                            slot.style.borderColor = '#00ffcc';
-                        }
-                    });
-                }
+            groupName = state.groupName;
+            teamName = state.teamName;
+            selectedGroup = groupName;
+            isStage1Finished = state.isStage1Finished || false;
+            stage1Seconds = state.stage1Seconds || 0;
+            hasPenalty = state.hasPenalty || false;
+            totalScore = state.totalScore || 0;
+            completedCount = state.completedCount || 0;
+            isMissionFinished = state.isMissionFinished || false;
 
-                if (state.sampleState) {
-                    sampleState = state.sampleState;
-                }
-
-                document.getElementById('register-modal').style.display = 'none';
-                document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
-                document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
-                document.getElementById('score-display').innerText = totalScore;
-
-                renderStage2Cards();
-
-                // 恢复阶段二题目状态
-                ['A', 'B', 'C', 'D', 'E'].forEach(k => {
-                    var s = sampleState[k];
-                    if (s) {
-                        var sel = document.getElementById('select-' + k);
-                        var btn = document.getElementById('btn-verify-' + k);
-                        var stat = document.getElementById('status-' + k);
-                        if (sel && s.userChoice) sel.value = s.userChoice;
-                        if (stat) {
-                            if (s.solved) {
-                                if (s.score > 0) {
-                                    stat.innerText = `✅ 正确 (+${s.score}分)`;
-                                    stat.style.color = '#00ffcc';
-                                } else {
-                                    stat.innerText = `❌ 错误！未得分`;
-                                    stat.style.color = '#ff4a4a';
-                                }
-                                if (sel) sel.disabled = true;
-                                if (btn) btn.disabled = true;
-                            } else if (s.attempts === 1) {
-                                stat.innerText = `❌ 错误！还有1次机会`;
-                                stat.style.color = '#ff9900';
-                            }
-                        }
+            if (state.capturedpHs) {
+                capturedpHs = new Set(state.capturedpHs);
+                capturedpHs.forEach(ph => {
+                    var data = phColors[ph];
+                    var block = document.getElementById('block-' + ph);
+                    var txt = document.getElementById('txt-' + ph);
+                    var slot = document.getElementById('slot-' + ph);
+                    if (block && txt && slot && data) {
+                        block.style.backgroundColor = data.hex;
+                        txt.innerText = "已锁定"; txt.style.color = '#00ffcc';
+                        slot.style.borderColor = '#00ffcc';
                     }
                 });
-
-                if (isMissionFinished) {
-                    document.getElementById('status-bar-container').style.display = 'block';
-                    var stage2 = document.getElementById('stage2-app');
-                    stage2.classList.add('unlocked');
-                    finishMission(false, false);
-                }
-                return true;
             }
+
+            if (state.sampleState) {
+                sampleState = state.sampleState;
+            }
+
+            document.getElementById('register-modal').style.display = 'none';
+            document.getElementById('display-team-info').innerText = groupName + " - " + teamName;
+            document.getElementById('wait-team-name').innerText = groupName + " - " + teamName;
+            document.getElementById('score-display').innerText = totalScore;
+
+            renderStage2Cards();
+
+            // 恢复阶段二题目状态
+            ['A', 'B', 'C', 'D', 'E'].forEach(k => {
+                var s = sampleState[k];
+                if (s) {
+                    var sel = document.getElementById('select-' + k);
+                    var btn = document.getElementById('btn-verify-' + k);
+                    var stat = document.getElementById('status-' + k);
+                    if (sel && s.userChoice) sel.value = s.userChoice;
+                    if (stat) {
+                        if (s.solved) {
+                            if (s.score > 0) {
+                                stat.innerText = `✅ 正确 (+${s.score}分)`;
+                                stat.style.color = '#00ffcc';
+                            } else {
+                                stat.innerText = `❌ 错误！未得分`;
+                                stat.style.color = '#ff4a4a';
+                            }
+                            if (sel) sel.disabled = true;
+                            if (btn) btn.disabled = true;
+                        } else if (s.attempts === 1) {
+                            stat.innerText = `❌ 错误！还有1次机会`;
+                            stat.style.color = '#ff9900';
+                        }
+                    }
+                }
+            });
+
+            if (isMissionFinished) {
+                document.getElementById('status-bar-container').style.display = 'block';
+                var stage2 = document.getElementById('stage2-app');
+                stage2.classList.add('unlocked');
+                finishMission(false, false);
+            }
+            return true;
         } catch (e) { console.log(e); }
+        resetClientForNewRound();
         return false;
+    }
+
+    // 💡 新一轮开始时自动重置客户端状态
+    function resetClientForNewRound() {
+        teamName = "";
+        groupName = "";
+        selectedGroup = "";
+        isStage1Started = false;
+        isStage1Finished = false;
+        isStage2Started = false;
+        isMissionFinished = false;
+        stage1Seconds = 0;
+        stage2Seconds = 0;
+        hasPenalty = false;
+        totalScore = 0;
+        completedCount = 0;
+        capturedpHs.clear();
+
+        document.getElementById('register-modal').style.display = 'flex';
+        document.getElementById('waiting-modal').style.display = 'none';
+        document.getElementById('status-bar-container').style.display = 'none';
+        document.getElementById('stage2-app').classList.remove('unlocked');
+        
+        var tInput = document.getElementById('team-name-input');
+        if (tInput) tInput.value = '';
+        var pinInput = document.getElementById('pin-code-input');
+        if (pinInput) pinInput.value = '';
+        
+        document.querySelectorAll('.seat-btn').forEach(b => b.classList.remove('selected'));
     }
 
     function fmtTime(sec) {
@@ -1193,7 +1229,7 @@
         });
     }
 
-    // 🚀 页面初始化检查：监听轮次并尝试自动恢复
+    // 🚀 页面初始化检查：监听轮次并校验缓存
     function initStudentClient() {
         renderStage2Cards();
         db.ref('current_round_id').on('value', (snap) => {
