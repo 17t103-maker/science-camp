@@ -527,7 +527,7 @@
 
     var currentpH = 7, capturedpHs = new Set(), dripCount = 0, lastDirection = 0;
 
-    // 💾 本地持久化保存与恢复模块（已绑定 roundId）
+    // 💾 本地持久化保存与恢复模块（加入防作弊销毁校验）
     function saveLocalProgress() {
         var state = {
             roundId: currentRoundId,
@@ -554,6 +554,13 @@
         try {
             var state = JSON.parse(raw);
             if (!state || state.roundId !== rId || !state.teamName) {
+                resetClientForNewRound();
+                return false;
+            }
+
+            // 💡【核心防作弊】：如果本地缓存记录任务已完成，直接销毁缓存并强制重新登记，防止恶意刷新刷题
+            if (state.isMissionFinished) {
+                localStorage.removeItem('sci_camp_progress_' + rId);
                 resetClientForNewRound();
                 return false;
             }
@@ -633,7 +640,7 @@
         return false;
     }
 
-    // 💡 新一轮开始时自动重置客户端状态
+    // 💡 客户端状态重置函数
     function resetClientForNewRound() {
         teamName = "";
         groupName = "";
@@ -795,6 +802,9 @@
 
             if (roomState.status === 'ended') {
                 disableAllControls();
+                // 💡 老师点结束时，立刻清除本地缓存，防止后续刷新免登
+                localStorage.removeItem('sci_camp_progress_' + currentRoundId);
+                
                 if (!isMissionFinished) {
                     alert('📢 老师已宣布本轮比赛结束！系统已自动为您结算当前成绩。');
                     finishMission(true);
