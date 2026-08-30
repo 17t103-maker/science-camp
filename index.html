@@ -640,19 +640,17 @@
         return false;
     }
 
-    // 💡 客户端状态重置函数（已确保所有计时、罚时与阶段状态完全归零）
+    // 💡 客户端状态重置函数
     function resetClientForNewRound() {
         teamName = "";
         groupName = "";
         selectedGroup = "";
         
-        // 关卡状态清空
         isStage1Started = false;
         isStage1Finished = false;
         isStage2Started = false;
         isMissionFinished = false;
         
-        // ⏱️ 关键修复：所有秒数与罚时必须彻底归零！
         stage1Seconds = 0;
         stage2Seconds = 0;
         hasPenalty = false;
@@ -666,7 +664,6 @@
         dripCount = 0;
         lastDirection = 0;
 
-        // 清除光谱画面锁定状态
         for(var i=2; i<=11; i++) {
             var block = document.getElementById('block-' + i);
             var txt = document.getElementById('txt-' + i);
@@ -839,7 +836,7 @@
             }
 
             if (roomState.stage1_started && !isStage1Started) {
-                unlockStage1(roomState.stage1_time);
+                unlockStage1();
             }
 
             if (roomState.stage2_started && !isStage2Started) {
@@ -858,7 +855,7 @@
         });
     }
 
-    function unlockStage1(startTimeStr) {
+    function unlockStage1() {
         isStage1Started = true;
         document.getElementById('waiting-modal').style.display = 'none';
         document.getElementById('register-modal').style.display = 'none';
@@ -871,11 +868,13 @@
             document.getElementById('btn-skip-s1').disabled = false;
         }
 
-        stage1StartTime = startTimeStr ? new Date(startTimeStr) : new Date();
+        stage1StartTime = new Date();
+        stage1Seconds = 0;
+
         if (stage1Timer) clearInterval(stage1Timer);
         stage1Timer = setInterval(function() {
             if (!isStage1Finished) {
-                stage1Seconds = Math.max(0, Math.floor((new Date() - new Date(stage1StartTime)) / 1000));
+                stage1Seconds = Math.max(0, Math.floor((new Date() - stage1StartTime) / 1000));
                 document.getElementById('timer-stage1-display').innerText = fmtTime(stage1Seconds);
             } else {
                 document.getElementById('timer-stage1-display').innerText = fmtTime(stage1Seconds);
@@ -1026,6 +1025,13 @@
     }
 
     function submitStage1Result() {
+        // 💡【核心防呆拦截】：送出成绩前强制检查，如果没有组别或队名绝对不让送出！
+        if (!groupName || !teamName) {
+            alert("⚠️ 您的特工身份资讯遗失（未正确登记组别或队名），无法提交成绩！请重新整理页面并完成身份登记。");
+            resetClientForNewRound();
+            return;
+        }
+
         var payload = {
             sessionId: mySessionId,
             group: groupName,
@@ -1177,6 +1183,13 @@
     }
 
     function finishMission(isForced = false, isSilentUpdate = false) {
+        // 💡【核心防呆拦截】：送出最后总成绩前强制检查，绝不放过任何没有组别或队名的数据！
+        if (!groupName || !teamName) {
+            alert("⚠️ 您的特工身份资讯遗失（未正确登记组别或队名），无法提交成绩！请重新整理页面并完成身份登记。");
+            resetClientForNewRound();
+            return;
+        }
+
         if (isMissionFinished && !isSilentUpdate) return;
         isMissionFinished = true;
         clearInterval(stage2Timer);
@@ -1246,8 +1259,8 @@
             tbody.innerHTML += `
                 <tr ${rowClass}>
                     <td>${rank}</td>
-                    <td>${item.group}</td>
-                    <td>${item.team} ${isMyTeam ? '(我方)' : ''}</td>
+                    <td>${item.group || '未登记'}</td>
+                    <td>${item.team || '未命名'} ${isMyTeam ? '(我方)' : ''}</td>
                     <td><b>${item.score}</b> 分</td>
                     <td>${detailsHtml}</td>
                     <td style="font-family:monospace;">${item.time_used}</td>
@@ -1273,7 +1286,6 @@
         db.ref('current_round_id').on('value', (snap) => {
             var rId = snap.val() || '1';
             
-            // 💡 如果老师在后台切换了轮次（例如从第1轮切换到第2轮），强制重置客户端状态
             if (lastKnownRound !== rId) {
                 lastKnownRound = rId;
                 localStorage.setItem('sci_camp_active_round', rId);
