@@ -640,21 +640,48 @@
         return false;
     }
 
-    // 💡 客户端状态重置函数
+    // 💡 客户端状态重置函数（已确保所有计时、罚时与阶段状态完全归零）
     function resetClientForNewRound() {
         teamName = "";
         groupName = "";
         selectedGroup = "";
+        
+        // 关卡状态清空
         isStage1Started = false;
         isStage1Finished = false;
         isStage2Started = false;
         isMissionFinished = false;
+        
+        // ⏱️ 关键修复：所有秒数与罚时必须彻底归零！
         stage1Seconds = 0;
         stage2Seconds = 0;
         hasPenalty = false;
+        if (stage1Timer) clearInterval(stage1Timer);
+        if (stage2Timer) clearInterval(stage2Timer);
+
         totalScore = 0;
         completedCount = 0;
         capturedpHs.clear();
+        currentpH = 7;
+        dripCount = 0;
+        lastDirection = 0;
+
+        // 清除光谱画面锁定状态
+        for(var i=2; i<=11; i++) {
+            var block = document.getElementById('block-' + i);
+            var txt = document.getElementById('txt-' + i);
+            var slot = document.getElementById('slot-' + i);
+            if (block && txt && slot) {
+                block.style.backgroundColor = '';
+                txt.innerText = "未捕获"; 
+                txt.style.color = '#556b82';
+                slot.style.borderColor = 'rgba(255,255,255,0.1)';
+            }
+        }
+        var liquid = document.getElementById('beaker-liquid');
+        if (liquid) liquid.style.backgroundColor = '#9933ff';
+        var phValSpan = document.getElementById('ph-val');
+        if (phValSpan) phValSpan.innerText = '7';
 
         document.getElementById('register-modal').style.display = 'flex';
         document.getElementById('waiting-modal').style.display = 'none';
