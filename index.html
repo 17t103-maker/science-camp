@@ -1238,26 +1238,29 @@
         });
     }
 
-    // 🚀 页面初始化检查：优化版（防止网路抖动或重连时误跳回登入画面）
+    // 🚀 页面初始化检查：自动侦测轮次变动，支援换轮次时自动清空并干净进入新登入画面
     function initStudentClient() {
         renderStage2Cards();
-        var isInitialized = false;
+        var lastKnownRound = localStorage.getItem('sci_camp_active_round') || '1';
 
         db.ref('current_round_id').on('value', (snap) => {
             var rId = snap.val() || '1';
             
-            if (isInitialized && currentRoundId === rId) {
-                return; 
+            // 💡 如果老师在后台切换了轮次（例如从第1轮切换到第2轮），强制重置客户端状态
+            if (lastKnownRound !== rId) {
+                lastKnownRound = rId;
+                localStorage.setItem('sci_camp_active_round', rId);
+                localStorage.removeItem('sci_camp_progress_' + currentRoundId);
+                resetClientForNewRound();
             }
             
             currentRoundId = rId;
             var isRestored = tryRestoreLocalProgress(rId);
             
-            if (isRestored) {
-                isInitialized = true;
-                listenGlobalSignal();
+            if (!isRestored) {
+                resetClientForNewRound();
             } else {
-                isInitialized = false;
+                listenGlobalSignal();
             }
         });
     }
