@@ -97,7 +97,6 @@
             display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 12px;
         }
 
-        /* 10组固定席位网格样式 */
         .registered-box {
             background: rgba(0, 0, 0, 0.25);
             border: 1px solid #334e68;
@@ -214,7 +213,6 @@
             padding: 25px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; text-align: left;
         }
 
-        /* Top 5 颁奖台阶梯 */
         .podium-modal {
             background: #132230; border: 3px solid #ffd700; border-radius: 16px;
             padding: 30px 15px; max-width: 900px; width: 95%; box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
@@ -380,7 +378,6 @@
             <p style="color:#a0b0c0; font-size:13px; margin-top:5px;">热烈祝贺本轮表现最出色的前五支特工小队！</p>
 
             <div class="podium-stage">
-                <!-- 第 4 名 -->
                 <div class="podium-step step-4">
                     <div class="podium-card" id="card-rank-4">
                         <div class="podium-crown">🏅</div>
@@ -391,7 +388,6 @@
                     <div class="podium-rank-num">4</div>
                 </div>
 
-                <!-- 亚军 (第 2 名) -->
                 <div class="podium-step step-2">
                     <div class="podium-card" id="card-rank-2">
                         <div class="podium-crown">🥈</div>
@@ -402,7 +398,6 @@
                     <div class="podium-rank-num">2</div>
                 </div>
 
-                <!-- 冠军 (第 1 名) -->
                 <div class="podium-step step-1">
                     <div class="podium-card" id="card-rank-1" style="border-color:#ffd700; box-shadow:0 0 15px rgba(255,215,0,0.3);">
                         <div class="podium-crown">🥇</div>
@@ -413,7 +408,6 @@
                     <div class="podium-rank-num" style="color:rgba(255,215,0,0.4);">1</div>
                 </div>
 
-                <!-- 季军 (第 3 名) -->
                 <div class="podium-step step-3">
                     <div class="podium-card" id="card-rank-3">
                         <div class="podium-crown">🥉</div>
@@ -424,7 +418,6 @@
                     <div class="podium-rank-num">3</div>
                 </div>
 
-                <!-- 第 5 名 -->
                 <div class="podium-step step-5">
                     <div class="podium-card" id="card-rank-5">
                         <div class="podium-crown">🎗️</div>
@@ -532,7 +525,6 @@
         });
     }
 
-    // 💡【核心修正】：切换轮次时自动进行数据健康检查，顺便清理并剔除不合法的幽灵脏数据
     function switchRound(rId) {
         currentRoundId = String(rId);
         db.ref('current_round_id').set(currentRoundId);
@@ -542,7 +534,6 @@
         ensurePinExists(currentRoundId);
         ensureAnswersExist(currentRoundId);
 
-        // 自动净化幽灵数据：检查该轮的 leaderboard 与 stage1_results，剔除缺少 group 或 team 的残缺记录
         db.ref(`rounds/${currentRoundId}/leaderboard`).once('value', snap => {
             var obj = snap.val() || {};
             Object.keys(obj).forEach(k => {
@@ -669,7 +660,6 @@
 
             db.ref(`rounds/${currentRoundId}/stage1_results`).on('value', snap => {
                 var s1Data = Object.values(snap.val() || {});
-                // 仅筛选并显示具有有效组别与队名的资料
                 s1Data = s1Data.filter(item => item && item.group && item.team);
                 s1Data.sort((a,b) => a.s1_seconds - b.s1_seconds);
 
@@ -681,7 +671,11 @@
 
                 s1Data.forEach((item, index) => {
                     var rankIcon = index === 0 ? '🥇 1' : index === 1 ? '🥈 2' : index === 2 ? '🥉 3' : (index + 1);
-                    var penText = item.hasPenalty ? '<span class="penalty-tag-yes">⚠️ 超时 (+30s 罚时)</span>' : '<span class="penalty-tag-no">✅ 合格</span>';
+                    
+                    // 💡【双保险硬核判定】：老师端直接拿真实的秒数 (s1_seconds) 来做最终裁决！只要 <= 300 秒绝对显示合格！
+                    var isRealPenalty = item.s1_seconds > 300;
+                    var penText = isRealPenalty ? '<span class="penalty-tag-yes">⚠️ 超时 (+30s 罚时)</span>' : '<span class="penalty-tag-no">✅ 合格</span>';
+                    
                     tbody.innerHTML += `
                         <tr>
                             <td>${rankIcon}</td>
@@ -712,7 +706,6 @@
             db.ref(`rounds/${currentRoundId}/leaderboard`).on('value', snap => {
                 var rawObj = snap.val() || {};
                 var data = Object.keys(rawObj).map(k => ({ key: k, ...rawObj[k] }));
-                // 仅筛选并显示具有有效组别与队名的资料，彻底杜绝空白行
                 data = data.filter(item => item && item.group && item.team);
                 data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
