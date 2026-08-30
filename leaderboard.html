@@ -476,11 +476,12 @@
         return CODE_TO_OPTION[code] || '中性';
     }
 
+    // 💡 修改后的默认预设标准答案：A弱碱, B强酸, C中性, D弱酸, E强碱
     var defaultAnswers = { 
-        'A': encryptAns('强酸性'), 
-        'B': encryptAns('弱酸性'), 
+        'A': encryptAns('弱碱性'), 
+        'B': encryptAns('强酸性'), 
         'C': encryptAns('中性'), 
-        'D': encryptAns('弱碱性'), 
+        'D': encryptAns('弱酸性'), 
         'E': encryptAns('强碱性') 
     };
     var currentAnswers = { ...defaultAnswers };
