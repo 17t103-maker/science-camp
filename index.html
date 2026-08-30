@@ -73,11 +73,6 @@
         .btn-action:disabled { opacity: 0.4; cursor: not-allowed; border-color: #555; }
         .btn-capture { background: var(--primary); color: #0a1118; border: none; }
         .btn-capture:hover:not(:disabled) { background: #00cc99; box-shadow: 0 0 15px var(--primary); }
-        .btn-skip {
-            background: rgba(255, 74, 74, 0.15); border: 1px solid #ff4a4a; color: #ff9999;
-            padding: 8px; border-radius: 6px; font-size: 12px; cursor: pointer; width: 100%; transition: all 0.2s;
-        }
-        .btn-skip:hover:not(:disabled) { background: rgba(255, 74, 74, 0.3); color: #fff; }
         .btn-verify-single {
             background: rgba(0,255,204,0.2); border: 1px solid var(--primary); color: #fff;
             padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;
@@ -276,7 +271,7 @@
         </div>
 
         <div class="mission-brief">
-            <b>🕵️ 特工指令：</b>连续加酸/加碱（满3滴变色）收集齐 pH 2-11 的 10 种标准色谱。<b>⚠️ 注意：第一阶段操作超过 5 分钟 (300秒) 未完成，阶段二将追加 30 秒超时罚时！若遇到困难可选择提前结算进入阶段二。</b>
+            <b>🕵️ 特工指令：</b>连续加酸/加碱（满3滴变色）收集齐 pH 2-11 的 10 种标准色谱。<b>⚠️ 注意：第一阶段操作超过 5 分钟 (300秒) 未完成，阶段二将追加 30 秒超时罚时！</b>
         </div>
     </header>
 
@@ -292,7 +287,6 @@
             <div class="ph-gauge">pH <span id="ph-val">7</span></div>
             <button class="btn-action" id="btn-alkali" onclick="triggerDrip(1)" disabled>🧪 持续滴入碱性物质 (pH ↑)</button>
             <button class="btn-action btn-capture" id="btn-capture" onclick="captureColor()" disabled>📸 捕获当前 pH 颜色数据</button>
-            <button class="btn-skip" id="btn-skip-s1" onclick="skipStage1()" disabled>⏭️ 放弃剩余标定，直接结算并进入阶段二 (视为超时)</button>
         </div>
 
         <div class="visual-panel">
@@ -402,7 +396,6 @@
 
     var currentRoundId = '1';
 
-    // 💡【核心防污染机制】：让 sessionId 自动绑定当前轮次，确保跨轮次时每轮都是全新的唯一身分
     function getSessionId(rId) {
         var baseKey = 'sci_camp_base_session_id';
         var baseSid = localStorage.getItem(baseKey);
@@ -659,7 +652,7 @@
     function registerTeam() {
         db.ref('current_round_id').once('value', (snap) => {
             currentRoundId = snap.val() || '1';
-            mySessionId = getSessionId(currentRoundId); // 确保登记时绑定当前轮次 sessionId
+            mySessionId = getSessionId(currentRoundId);
             
             db.ref(`rounds/${currentRoundId}/room_state`).once('value', (stateSnap) => {
                 var rState = stateSnap.val() || { status: 'waiting' };
@@ -785,7 +778,6 @@
             document.getElementById('btn-acid').disabled = false;
             document.getElementById('btn-alkali').disabled = false;
             document.getElementById('btn-capture').disabled = false;
-            document.getElementById('btn-skip-s1').disabled = false;
         }
 
         stage1StartTime = new Date();
@@ -877,18 +869,12 @@
         }
     }
 
-    function skipStage1() {
-        if (!confirm("⚠️ 确定要提前结算并进入阶段二吗？\n提前结束将自动被判定为【超时】并在阶段二追加 30 秒罚时！")) return;
-        completeStage1(true);
-    }
-
     function completeStage1(isSkipped) {
         isStage1Finished = true;
         clearInterval(stage1Timer);
         document.getElementById('btn-acid').disabled = true;
         document.getElementById('btn-alkali').disabled = true;
         document.getElementById('btn-capture').disabled = true;
-        document.getElementById('btn-skip-s1').disabled = true;
 
         hasPenalty = isSkipped || (stage1Seconds > 300);
         saveLocalProgress();
@@ -901,10 +887,10 @@
         if (hasPenalty) {
             alertBox.style.borderColor = "#ff4a4a";
             alertTitle.style.color = "#ff4a4a";
-            alertTitle.innerText = isSkipped ? "⚠️ 提前结束阶段一 (超时罚时)" : "⚠️ 第一阶段超时警告通知！";
+            alertTitle.innerText = "⚠️ 第一阶段超时警告通知！";
             alertContent.innerHTML = `
                 <b>小队名称：</b>${groupName} - ${teamName}<br>
-                <b>阶段一用时：</b><span style="color:#ff4a4a; font-weight:bold; font-family:monospace;">${fmtTime(stage1Seconds)}</span> ${isSkipped ? '(中途结算)' : '(超过 5 分钟上限)'}<br><br>
+                <b>阶段一用时：</b><span style="color:#ff4a4a; font-weight:bold; font-family:monospace;">${fmtTime(stage1Seconds)}</span> (超过 5 分钟上限)<br><br>
                 🚨 <b>惩罚规则生效：</b><br>
                 系统已自动触发处罚机制，将在<b>第二阶段最终用时中追加 30 秒罚时 (+30s)</b>！
             `;
@@ -1206,7 +1192,6 @@
                 localStorage.setItem('sci_camp_active_round', rId);
                 localStorage.removeItem('sci_camp_progress_' + currentRoundId);
                 
-                // 💡 切换轮次时，顺便更新当前轮次的动态 sessionId
                 currentRoundId = rId;
                 mySessionId = getSessionId(rId);
                 
