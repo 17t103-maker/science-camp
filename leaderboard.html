@@ -444,7 +444,6 @@
     </div>
 
 <script>
-    // 🔑 初始化 Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyDxN0g2848g3oUeB33IBkaHNOFxpMJqICo",
         authDomain: "science-camp-52b23.firebaseapp.com",
@@ -458,7 +457,6 @@
     const db = firebase.database();
 
     var currentRoundId = '1';
-    // 💡 固定总共 5 轮
     var cachedRoundsList = ["1", "2", "3", "4", "5"];
 
     var OPTION_MAP = { '强酸性': 1, '弱酸性': 2, '中性': 3, '弱碱性': 4, '强碱性': 5 };
@@ -475,7 +473,6 @@
         return CODE_TO_OPTION[code] || '中性';
     }
 
-    // 默认预设标准答案：A弱碱, B强酸, C中性, D弱酸, E强碱
     var defaultAnswers = { 
         'A': encryptAns('弱碱性'), 
         'B': encryptAns('强酸性'), 
@@ -487,7 +484,6 @@
     var currentInspectingKey = null;
 
     function initRounds() {
-        // 直接采用固定的 5 轮，无需从远端动态添加
         db.ref('current_round_id').once('value', (curSnap) => {
             currentRoundId = curSnap.val() || "1";
             ensurePinExists(currentRoundId);
@@ -536,6 +532,7 @@
         });
     }
 
+    // 💡【核心修正】：切换轮次时自动进行数据健康检查，顺便清理并剔除不合法的幽灵脏数据
     function switchRound(rId) {
         currentRoundId = String(rId);
         db.ref('current_round_id').set(currentRoundId);
@@ -544,6 +541,28 @@
         
         ensurePinExists(currentRoundId);
         ensureAnswersExist(currentRoundId);
+
+        // 自动净化幽灵数据：检查该轮的 leaderboard 与 stage1_results，剔除缺少 group 或 team 的残缺记录
+        db.ref(`rounds/${currentRoundId}/leaderboard`).once('value', snap => {
+            var obj = snap.val() || {};
+            Object.keys(obj).forEach(k => {
+                var item = obj[k];
+                if (!item || !item.group || !item.team) {
+                    db.ref(`rounds/${currentRoundId}/leaderboard/${k}`).remove();
+                }
+            });
+        });
+
+        db.ref(`rounds/${currentRoundId}/stage1_results`).once('value', snap => {
+            var obj = snap.val() || {};
+            Object.keys(obj).forEach(k => {
+                var item = obj[k];
+                if (!item || !item.group || !item.team) {
+                    db.ref(`rounds/${currentRoundId}/stage1_results/${k}`).remove();
+                }
+            });
+        });
+
         listenCurrentRoundData();
     }
 
@@ -650,6 +669,8 @@
 
             db.ref(`rounds/${currentRoundId}/stage1_results`).on('value', snap => {
                 var s1Data = Object.values(snap.val() || {});
+                // 仅筛选并显示具有有效组别与队名的资料
+                s1Data = s1Data.filter(item => item && item.group && item.team);
                 s1Data.sort((a,b) => a.s1_seconds - b.s1_seconds);
 
                 tbody.innerHTML = '';
@@ -691,6 +712,8 @@
             db.ref(`rounds/${currentRoundId}/leaderboard`).on('value', snap => {
                 var rawObj = snap.val() || {};
                 var data = Object.keys(rawObj).map(k => ({ key: k, ...rawObj[k] }));
+                // 仅筛选并显示具有有效组别与队名的资料，彻底杜绝空白行
+                data = data.filter(item => item && item.group && item.team);
                 data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
                 tbody.innerHTML = '';
@@ -728,7 +751,6 @@
         }
     }
 
-    // --- 参考答案设置模态框 ---
     function openAnswersModal() {
         document.getElementById('ans-modal-round').innerText = currentRoundId;
         var container = document.getElementById('answers-form-container');
@@ -779,7 +801,6 @@
         closeAnswersModal();
     }
 
-    // --- 检视与重算逻辑 ---
     function openInspectModal(key) {
         currentInspectingKey = key;
         db.ref(`rounds/${currentRoundId}/leaderboard/${key}`).once('value', snap => {
@@ -876,11 +897,11 @@
         });
     }
 
-    // --- 颁奖仪式 (Top 5 呈现) ---
     function openCeremonyModal() {
         document.getElementById('podium-round-num').innerText = currentRoundId;
         db.ref(`rounds/${currentRoundId}/leaderboard`).once('value', snap => {
-            var data = Object.values(snap.val() || {});
+            var rawData = Object.values(snap.val() || {});
+            var data = rawData.filter(item => item && item.group && item.team);
             data.sort((a, b) => (b.score !== a.score) ? (b.score - a.score) : (a.total_seconds - b.total_seconds));
 
             for (var i = 1; i <= 5; i++) {
